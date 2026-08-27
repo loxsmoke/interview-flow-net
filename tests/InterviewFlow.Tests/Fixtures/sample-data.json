@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "states": {
+    "740841cb24c9": {
+      "id": "740841cb24c9",
+      "created_at": "2026-05-08T15:27:44.718213",
+      "updated_at": "2026-06-01T09:12:33.000042",
+      "job_posting": "Staff Engineer at Acme — Zürich office. Build the core API. 🚀",
+      "resume": "# John Smith\njohn@example.com",
+      "resume_raw": "(Normal, indent=1.3cm)(bold, size=11pt)John Smith",
+      "resumes": [
+        {
+          "id": "ab12cd34ef56",
+          "created_at": "2026-05-08T15:30:00.000001",
+          "description": "Backend focus",
+          "text": "# John Smith\nBackend engineer"
+        }
+      ],
+      "custom_action_results": {
+        "What question to ask": {
+          "result": "## Questions\n- Ask about on-call 🛡️",
+          "cost_usd": 0.0421,
+          "model_name": "claude-sonnet-4-6",
+          "duration_ms": 12345,
+          "ran_at": "2026-06-01T09:00:00.500000"
+        }
+      },
+      "company_name": "Acme | backend",
+      "position": "Staff Engineer",
+      "research": {
+        "company_name": "Acme",
+        "summary": "Payments rails",
+        "culture": "move fast with extreme safety",
+        "reputation": "solid",
+        "tech_stack": ["Java", "GKE"],
+        "products": ["Rails API"],
+        "challenges": ["legacy mainframe"],
+        "green_flags": ["stable"],
+        "red_flags": ["bureaucracy"],
+        "fit_score": 82,
+        "raw_report": "# 🛡️ Company Analysis Report: Acme\n[VERIFIED] Series C",
+        "query_cost_usd": 0.31,
+        "query_model_name": "claude-sonnet-4-6",
+        "query_duration_ms": 45210,
+        "query_ran_at": "2026-05-08T16:00:00.000001",
+        "researched_at": "2026-05-08T16:00:00.000001"
+      },
+      "interview_intel": {
+        "raw_report": "Real questions asked…",
+        "query_cost_usd": 0.12,
+        "query_model_name": "gpt-4o",
+        "query_duration_ms": 30001,
+        "query_ran_at": "2026-05-09T10:00:00.000001"
+      },
+      "jd_analysis": {
+        "raw_jd": "Staff Engineer JD",
+        "requirements": ["10y experience"],
+        "nice_to_haves": ["GCP"],
+        "hidden_signals": ["on-call heavy"],
+        "cultural_cues": ["ownership"],
+        "missing_signals": ["team size"],
+        "confidence_tags": { "10y experience": "HIGH" },
+        "raw_analysis": "## Six lens read",
+        "query_cost_usd": 0.09,
+        "query_model_name": "claude-sonnet-4-6",
+        "query_duration_ms": 20100,
+        "query_ran_at": "2026-05-09T11:00:00.000001"
+      },
+      "stories": [
+        {
+          "id": "0123456789ab",
+          "title": "Migration under fire",
+          "situation": "Legacy system failing",
+          "task": "Migrate with zero downtime",
+          "action": "Strangler pattern",
+          "result": "0 incidents",
+          "tags": ["migration", "leadership"],
+          "earned_secret": "Dual-write invariants matter more than tooling",
+          "fit_scores": { "system_design": "Strong Fit", "behavioral": "Workable" },
+          "times_used": 3,
+          "created_at": "2026-05-10T08:00:00.000001"
+        }
+      ],
+      "stories_cost_usd": 0.22,
+      "stories_model_name": "claude-sonnet-4-6",
+      "stories_duration_ms": 60123,
+      "stories_ran_at": "2026-05-10T08:05:00.000001",
+      "mock_sessions": [
+        {
+          "id": "fedcba987654",
+          "format": "system_design",
+          "questions": [
+            {
+              "question": "Design a rate limiter",
+              "answer": "Token bucket…",
+              "scores": { "clarity": 4, "depth": 3 },
+              "feedback": "Good tradeoffs",
+              "interviewer_thoughts": "Solid"
+            }
+          ],
+          "overall_scores": { "communication": 4.5 },
+          "bottleneck": "estimation",
+          "root_cause": "rushed capacity math",
+          "summary": "Strong overall",
+          "created_at": "2026-05-11T14:00:00.000001"
+        }
+      ],
+      "comp_data": {
+        "range_low": 180000,
+        "range_high": 240000,
+        "equity_notes": "RSUs, 4y vest",
+        "negotiation_scripts": ["Anchor high"],
+        "fallback_language": ["I'd need to think about that"],
+        "raw_analysis": "## Comp landscape",
+        "query_cost_usd": 0.15,
+        "query_model_name": "gemini-2.5-flash",
+        "query_duration_ms": 25000,
+        "query_ran_at": "2026-05-12T09:00:00.000001"
+      },
+      "pitch": {
+        "elevator_10s": "I make legacy systems boring.",
+        "networking_30s": "Longer pitch…",
+        "recruiter_60s": "Even longer…",
+        "interview_90s": "Full pitch…",
+        "value_proposition": "Zero-downtime migrations",
+        "query_cost_usd": 0.05,
+        "query_model_name": "claude-sonnet-4-6",
+        "query_duration_ms": 15000,
+        "query_ran_at": "2026-05-12T10:00:00.000001",
+        "talking_points": ["migration wins"],
+        "thirty_sixty_ninety": "30/60/90 plan…"
+      },
+      "progress": [
+        {
+          "date": "2026-05-13T18:00:00.000001",
+          "event_type": "mock",
+          "notes": "Felt good",
+          "scores": { "overall": 4.0 },
+          "self_assessment": { "confidence": 3.5 }
+        }
+      ],
+      "resume_review": "## Fit analysis",
+      "resume_review_cost_usd": 0.18,
+      "resume_review_model_name": "claude-sonnet-4-6",
+      "resume_review_duration_ms": 40000,
+      "resume_review_ran_at": "2026-05-14T09:00:00.000001",
+      "tailored_resume": "[Summary]Backend engineer…",
+      "resume_tagged": "[Section Heading]Experience\n[Job title]Staff Engineer | Acme",
+      "concerns_analysis": "## Objections",
+      "concerns_cost_usd": 0.07,
+      "concerns_model_name": "claude-sonnet-4-6",
+      "concerns_duration_ms": 18000,
+      "concerns_ran_at": "2026-05-15T09:00:00.000001",
+      "interviewer_concerns": [
+        { "concern": "No fintech background", "counter_evidence": "Regulated healthcare experience" }
+      ],
+      "thank_you_drafts": ["Thanks for the conversation…"],
+      "debrief_notes": ["[2026-05-16 10:00] went well"],
+      "completed_steps": ["setup", "resume", "research"],
+      "current_step": "stories"
+    },
+    "1112223334f5": {
+      "id": "1112223334f5",
+      "created_at": "2026-06-20T08:00:00.000001",
+      "updated_at": "2026-06-21T08:00:00.000001",
+      "job_posting": "",
+      "resume": "",
+      "resume_raw": "",
+      "resumes": [
+        {
+          "id": "ab12cd34ef56",
+          "created_at": "2026-05-08T15:30:00.000001",
+          "description": "  backend FOCUS  ",
+          "text": "duplicate by description casefold"
+        },
+        {
+          "id": "99887766aabb",
+          "created_at": "2026-06-20T09:00:00.000001",
+          "description": "Frontend variant",
+          "text": "# Jane"
+        }
+      ],
+      "custom_action_results": {},
+      "company_name": "Beta Corp",
+      "position": "Senior Engineer",
+      "research": { "company_name": "", "summary": "", "culture": "", "reputation": "", "tech_stack": [], "products": [], "challenges": [], "green_flags": [], "red_flags": [], "fit_score": 0, "raw_report": "", "query_cost_usd": 0.0, "query_model_name": "", "query_duration_ms": 0, "query_ran_at": "", "researched_at": "" },
+      "interview_intel": { "raw_report": "", "query_cost_usd": 0.0, "query_model_name": "", "query_duration_ms": 0, "query_ran_at": "" },
+      "jd_analysis": { "raw_jd": "", "requirements": [], "nice_to_haves": [], "hidden_signals": [], "cultural_cues": [], "missing_signals": [], "confidence_tags": {}, "raw_analysis": "", "query_cost_usd": 0.0, "query_model_name": "", "query_duration_ms": 0, "query_ran_at": "" },
+      "stories": [],
+      "stories_cost_usd": 0.0,
+      "stories_model_name": "",
+      "stories_duration_ms": 0,
+      "stories_ran_at": "",
+      "mock_sessions": [],
+      "comp_data": { "range_low": 0, "range_high": 0, "equity_notes": "", "negotiation_scripts": [], "fallback_language": [], "raw_analysis": "", "query_cost_usd": 0.0, "query_model_name": "", "query_duration_ms": 0, "query_ran_at": "" },
+      "pitch": { "elevator_10s": "", "networking_30s": "", "recruiter_60s": "", "interview_90s": "", "value_proposition": "", "query_cost_usd": 0.0, "query_model_name": "", "query_duration_ms": 0, "query_ran_at": "", "talking_points": [], "thirty_sixty_ninety": "" },
+      "progress": [],
+      "resume_review": "",
+      "resume_review_cost_usd": 0.0,
+      "resume_review_model_name": "",
+      "resume_review_duration_ms": 0,
+      "resume_review_ran_at": "",
+      "tailored_resume": "",
+      "resume_tagged": "",
+      "concerns_analysis": "",
+      "concerns_cost_usd": 0.0,
+      "concerns_model_name": "",
+      "concerns_duration_ms": 0,
+      "concerns_ran_at": "",
+      "interviewer_concerns": [],
+      "thank_you_drafts": [],
+      "debrief_notes": [],
+      "completed_steps": [],
+      "current_step": "setup"
+    },
+    "deadbeef0000": {
+      "id": "deadbeef0000",
+      "stories": "this is not a list — the entry must be skipped as corrupt"
+    }
+  }
+}

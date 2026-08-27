@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- interview-flow slate palette (docs/03-ui-spec.md §3.0). Central by design:
+       the original hardcodes Tailwind classes; the port names them once here. -->
+
+  <!-- Page & panels -->
+  <SolidColorBrush x:Key="PageBackgroundBrush" Color="#020617" />         <!-- slate-950 -->
+  <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#0F172A" />        <!-- slate-900 -->
+  <SolidColorBrush x:Key="PanelBorderBrush" Color="#1E293B" />            <!-- slate-800 -->
+
+  <!-- Text -->
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F1F5F9" />            <!-- slate-100 -->
+  <SolidColorBrush x:Key="ProseTextBrush" Color="#CBD5E1" />              <!-- slate-300 -->
+  <SolidColorBrush x:Key="TextMutedBrush" Color="#94A3B8" />              <!-- slate-400 -->
+
+  <!-- Accents -->
+  <SolidColorBrush x:Key="AccentIndigoBrush" Color="#6366F1" />
+  <SolidColorBrush x:Key="AccentPurpleBrush" Color="#8B5CF6" />
+  <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E" />
+  <SolidColorBrush x:Key="WarningAmberBrush" Color="#F59E0B" />
+  <SolidColorBrush x:Key="InfoSkyBrush" Color="#38BDF8" />
+  <SolidColorBrush x:Key="ResumeBadgeBrush" Color="#FACC15" />
+
+  <!-- Prose internals (docs/04-markdown-rendering.md §4.2) -->
+  <SolidColorBrush x:Key="CodeBackgroundBrush" Color="#1E293B" />
+  <SolidColorBrush x:Key="CodeForegroundBrush" Color="#E2E8F0" />
+  <SolidColorBrush x:Key="PreBackgroundBrush" Color="#0F172A" />
+  <SolidColorBrush x:Key="TableBorderBrush" Color="#334155" />            <!-- slate-700 -->
+  <SolidColorBrush x:Key="TableHeaderBrush" Color="#1E293B" />
+
+  <!-- search-warning banner (docs/04-markdown-rendering.md §4.5) -->
+  <SolidColorBrush x:Key="SearchWarningBackgroundBrush" Color="#431407" />
+  <SolidColorBrush x:Key="SearchWarningBorderBrush" Color="#9A3412" />
+  <SolidColorBrush x:Key="SearchWarningTextBrush" Color="#FB923C" />
+
+  <!-- Gradient used by primary buttons / active step tiles -->
+  <LinearGradientBrush x:Key="PrimaryGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+    <GradientStop Offset="0" Color="#6366F1" />
+    <GradientStop Offset="1" Color="#8B5CF6" />
+  </LinearGradientBrush>
+</ResourceDictionary>

@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             xmlns:views="using:InterviewFlow.App.Views"
+             xmlns:controls="using:InterviewFlow.App.Controls"
+             xmlns:diff="using:InterviewFlow.Core.ResumePipeline"
+             mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.ResumeTailorPageView"
+             x:DataType="pages:ResumeTailorPageViewModel"
+             x:Name="Root">
+
+  <!-- Resume Tailor (§3.7): analysis | editor split, coach chat, export. -->
+  <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+
+    <!-- Header -->
+    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
+        <views:AgentRunHeaderView DataContext="{Binding Run}" />
+        <Button Background="#7C3AED" Foreground="White" CornerRadius="12" Padding="14,10"
+                Content="Use AI Resume" IsEnabled="{Binding HasAiDraft}"
+                Command="{Binding UseAiResumeCommand}" />
+        <Button Background="#0891B2" Foreground="White" CornerRadius="12" Padding="14,10"
+                Content="Chat with Coach" Command="{Binding ToggleCoachCommand}" />
+        <Button Classes="subtle" Content="Continue →" Command="{Binding ContinueCommand}" />
+      </StackPanel>
+      <StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Text="Resume Tailor" FontSize="24" FontWeight="Bold"
+                     Foreground="{StaticResource TextPrimaryBrush}" />
+          <controls:CostBadge CostUsd="{Binding CostUsd}" Detail="{Binding CostDetail}" />
+        </StackPanel>
+        <TextBlock Text="AI reviews your resume against the JD and suggests targeted improvements."
+                   FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0" />
+      </StackPanel>
+    </DockPanel>
+
+    <TextBlock Grid.Row="1" Text="{Binding UpdateError}" FontSize="12" Foreground="#F87171"
+               TextWrapping="Wrap" Margin="0,0,0,8" IsVisible="{Binding HasUpdateError}" />
+
+    <!-- Coach chat (collapsible, cyan) -->
+    <Border Grid.Row="2" IsVisible="{Binding ShowCoach}" Margin="0,0,0,12"
+            Background="{StaticResource PanelBackgroundBrush}"
+            BorderBrush="#0891B2" BorderThickness="1" CornerRadius="12" Padding="12"
+            MaxHeight="420">
+      <DockPanel>
+        <TextBlock DockPanel.Dock="Top" Text="Resume Coach" FontSize="12" FontWeight="SemiBold"
+                   Foreground="#67E8F9" Margin="0,0,0,8" />
+        <controls:ChatPanel DataContext="{Binding Coach}" />
+      </DockPanel>
+    </Border>
+
+    <!-- Split: analysis | editor -->
+    <Grid Grid.Row="3" ColumnDefinitions="*,8,*" x:Name="SplitGrid">
+      <Border Grid.Column="0" Background="{StaticResource PanelBackgroundBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
+              CornerRadius="12" Padding="16">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="AI ANALYSIS &amp; SUGGESTIONS" FontSize="10"
+                     FontWeight="SemiBold" LetterSpacing="1"
+                     Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,10" />
+          <Grid>
+            <ScrollViewer IsVisible="{Binding HasAnalysis}">
+              <controls:MarkdownView Markdown="{Binding Analysis}" />
+            </ScrollViewer>
+            <TextBlock IsVisible="{Binding !HasAnalysis}"
+                       Text="No analysis yet — hit Run AI." FontSize="13" Foreground="#64748B"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Grid>
+        </DockPanel>
+      </Border>
+
+      <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" />
+
+      <Border Grid.Column="2" Background="{StaticResource PanelBackgroundBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
+              CornerRadius="12" Padding="16">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="YOUR RESUME" FontSize="10"
+                     FontWeight="SemiBold" LetterSpacing="1"
+                     Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,10" />
+          <TabControl SelectedIndex="{Binding SelectedTab}">
+            <TabItem Header="Edit">
+              <TextBox Classes="field" Text="{Binding TaggedResume}" AcceptsReturn="True"
+                       TextWrapping="Wrap" VerticalContentAlignment="Top"
+                       FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12" />
+            </TabItem>
+            <TabItem Header="Preview">
+              <ScrollViewer>
+                <controls:TaggedResumePreview TaggedText="{Binding TaggedResume}"
+                                              ShowContact="True"
+                                              ContactName="{Binding ContactName}"
+                                              ContactInfo="{Binding ContactInfo}"
+                                              Margin="4" />
+              </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Comparison">
+              <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding DiffRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="diff:DiffRow">
+                      <Border Background="{Binding Kind, Converter={x:Static views:ResumeTailorPageView.DiffBackground}}"
+                              Padding="6,1">
+                        <TextBlock FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                                   FontSize="12" LineHeight="20" TextWrapping="Wrap"
+                                   Foreground="{Binding Kind, Converter={x:Static views:ResumeTailorPageView.DiffForeground}}">
+                          <Run Text="{Binding Prefix}" /><Run Text=" " /><Run Text="{Binding Text}" />
+                        </TextBlock>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </TabItem>
+          </TabControl>
+        </DockPanel>
+      </Border>
+    </Grid>
+
+    <!-- Footer -->
+    <StackPanel Grid.Row="4" Spacing="8" Margin="0,12,0,0">
+      <Border Background="#0C4A6E" BorderBrush="#0284C7" BorderThickness="1" CornerRadius="8"
+              Padding="12,8" IsVisible="{Binding HasExportPath}">
+        <DockPanel>
+          <Button DockPanel.Dock="Right" Classes="subtle" Padding="8,4" FontSize="11"
+                  Content="📂 Open folder" Command="{Binding OpenExportFolderCommand}" />
+          <TextBlock Text="{Binding ExportedPath, StringFormat='Exported to {0}'}" FontSize="12"
+                     Foreground="#BAE6FD" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        </DockPanel>
+      </Border>
+      <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+        <Button Background="#0369A1" Foreground="White" CornerRadius="8" Padding="12,8"
+                Content="Export .docx" Command="{Binding ExportDocxCommand}" />
+        <Button Background="#166534" Foreground="White" CornerRadius="8" Padding="12,8"
+                Command="{Binding SaveCommand}">
+          <Panel>
+            <TextBlock Text="Save" IsVisible="{Binding !JustSaved}" />
+            <TextBlock Text="✓ Saved!" IsVisible="{Binding JustSaved}" />
+          </Panel>
+        </Button>
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</UserControl>

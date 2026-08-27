@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:InterviewFlow.App.ViewModels"
+             xmlns:controls="using:InterviewFlow.App.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="InterviewFlow.App.Controls.ChatPanel"
+             x:DataType="vm:ChatViewModel">
+
+  <!-- Chat transcript + composer (§3.6): user bubbles right-aligned, assistant
+       left, both rendered through MarkdownView; Enter sends, Shift+Enter newline. -->
+  <Grid RowDefinitions="*,Auto,Auto">
+    <ScrollViewer x:Name="Transcript" Grid.Row="0">
+      <ItemsControl ItemsSource="{Binding Bubbles}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ChatBubbleViewModel">
+            <StackPanel Margin="0,0,0,12"
+                        HorizontalAlignment="{Binding IsUser, Converter={x:Static controls:ChatPanel.AlignConverter}}"
+                        MaxWidth="720">
+              <TextBlock Text="{Binding Caption}" FontSize="10" FontWeight="SemiBold"
+                         Foreground="#64748B" Margin="4,0,4,3"
+                         HorizontalAlignment="{Binding IsUser, Converter={x:Static controls:ChatPanel.AlignConverter}}" />
+              <Border Background="{Binding IsUser, Converter={x:Static controls:ChatPanel.BubbleBackground}}"
+                      BorderBrush="{StaticResource PanelBorderBrush}"
+                      BorderThickness="{Binding IsUser, Converter={x:Static controls:ChatPanel.BubbleBorder}}"
+                      CornerRadius="{Binding IsUser, Converter={x:Static controls:ChatPanel.BubbleRadius}}"
+                      Padding="14,10">
+                <controls:MarkdownView Markdown="{Binding Text}" />
+              </Border>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+    <StackPanel Grid.Row="1" Spacing="8" Margin="0,8,0,0">
+      <Border Background="#431407" BorderBrush="#9A3412" BorderThickness="1" CornerRadius="8"
+              Padding="12,8" IsVisible="{Binding HasError}">
+        <TextBlock Text="{Binding ErrorMessage}" FontSize="12" TextWrapping="Wrap"
+                   Foreground="{StaticResource SearchWarningTextBrush}" />
+      </Border>
+      <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsBusy}">
+        <TextBlock Text="●●●" FontSize="12" Foreground="{StaticResource AccentIndigoBrush}"
+                   Classes="typingDots" />
+        <TextBlock Text="Thinking…" FontSize="12" Foreground="{StaticResource TextMutedBrush}" />
+      </StackPanel>
+    </StackPanel>
+
+    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0"
+          IsVisible="{Binding !IsComplete}">
+      <TextBox Grid.Column="0" x:Name="Composer" Classes="field"
+               Text="{Binding Draft}" AcceptsReturn="True" TextWrapping="Wrap"
+               MinHeight="72" MaxHeight="160" VerticalContentAlignment="Top"
+               Watermark="Type your answer… (Enter to send, Shift+Enter for a new line)"
+               KeyDown="OnComposerKeyDown" />
+      <Button Grid.Column="1" Classes="primary" Content="Send" Margin="10,0,0,0"
+              VerticalAlignment="Bottom"
+              IsEnabled="{Binding CanSend}" Command="{Binding SendCommand}" />
+    </Grid>
+  </Grid>
+</UserControl>

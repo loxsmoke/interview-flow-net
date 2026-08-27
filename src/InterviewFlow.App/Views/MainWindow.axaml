@@ -1,0 +1,65 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:InterviewFlow.App.ViewModels"
+        xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+        xmlns:views="using:InterviewFlow.App.Views"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
+        x:Class="InterviewFlow.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="{Binding WindowTitle}"
+        Width="1400" Height="900"
+        MinWidth="900" MinHeight="600"
+        Background="{StaticResource PageBackgroundBrush}">
+  <Design.DataContext>
+    <vm:MainViewModel />
+  </Design.DataContext>
+
+  <!-- Page VM → view resolution via typed templates (docs/01-architecture.md). -->
+  <Window.DataTemplates>
+    <DataTemplate DataType="{x:Type pages:SetupPageViewModel}">
+      <views:SetupPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:AboutPageViewModel}">
+      <views:AboutPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:ConfigPageViewModel}">
+      <views:ConfigPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:PlaceholderPageViewModel}">
+      <views:PlaceholderPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:AgentPageViewModel}">
+      <views:AgentPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:StoryBankPageViewModel}">
+      <views:StoryBankPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:DebriefPageViewModel}">
+      <views:DebriefPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:CustomActionPageViewModel}">
+      <views:CustomActionPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:ResumePageViewModel}">
+      <views:ResumePageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:ResumeTailorPageViewModel}">
+      <views:ResumeTailorPageView />
+    </DataTemplate>
+    <DataTemplate DataType="{x:Type pages:MockInterviewPageViewModel}">
+      <views:MockInterviewPageView />
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <!-- Shell: fixed 240px sidebar + swapping content (original SPA layout §3.0). -->
+  <DockPanel>
+    <views:SidebarView DockPanel.Dock="Left" Width="240" />
+    <TransitioningContentControl Content="{Binding CurrentPage}" Margin="32">
+      <TransitioningContentControl.PageTransition>
+        <CrossFade Duration="0:0:0.25" />
+      </TransitioningContentControl.PageTransition>
+    </TransitioningContentControl>
+  </DockPanel>
+</Window>

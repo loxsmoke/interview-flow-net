@@ -1,0 +1,180 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:InterviewFlow.App.ViewModels"
+             xmlns:models="using:InterviewFlow.Core.Models"
+             mc:Ignorable="d" d:DesignWidth="240" d:DesignHeight="900"
+             x:Class="InterviewFlow.App.Views.SidebarView"
+             x:DataType="vm:MainViewModel"
+             x:Name="Root">
+  <Design.DataContext>
+    <vm:MainViewModel />
+  </Design.DataContext>
+
+  <UserControl.Styles>
+    <!-- Step rows (docs/03-ui-spec.md §3.1) -->
+    <Style Selector="Button.stepRow">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="BorderThickness" Value="0,0,2,0" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.stepRow:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#131C2E" />
+    </Style>
+    <Style Selector="Button.stepRow.active">
+      <Setter Property="Background" Value="#1E293B" />
+      <Setter Property="BorderBrush" Value="{StaticResource AccentIndigoBrush}" />
+    </Style>
+    <Style Selector="Button.stepRow.locked">
+      <Setter Property="Opacity" Value="0.4" />
+      <Setter Property="IsEnabled" Value="False" />
+    </Style>
+
+    <Style Selector="Border.tile">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Background" Value="#1E293B" />
+    </Style>
+    <Style Selector="Border.tile.active">
+      <Setter Property="Background" Value="{StaticResource PrimaryGradientBrush}" />
+    </Style>
+    <Style Selector="Border.tile.failed">
+      <Setter Property="Background" Value="#8B1D1D" />
+    </Style>
+    <Style Selector="TextBlock.doneGlyph">
+      <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border Background="{StaticResource PanelBackgroundBrush}"
+          BorderBrush="{StaticResource PanelBorderBrush}"
+          BorderThickness="0,0,1,0">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+      <!-- Header: ⓘ · wordmark · ⚙ -->
+      <StackPanel Grid.Row="0" Margin="12,16,12,8">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Button Grid.Column="0" Classes="icon" Command="{Binding OpenAboutCommand}"
+                  ToolTip.Tip="About">
+            <TextBlock Text="ⓘ" FontSize="16" Foreground="{StaticResource TextMutedBrush}" />
+          </Button>
+          <TextBlock Grid.Column="1" Text="Interview Flow"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource PrimaryGradientBrush}" />
+          <Button Grid.Column="2" Classes="icon" Command="{Binding OpenConfigCommand}"
+                  ToolTip.Tip="Configuration">
+            <TextBlock Text="⚙" FontSize="16"
+                       Foreground="{StaticResource TextMutedBrush}"
+                       Classes.cogPulse="{Binding !ProviderConfigured}" />
+          </Button>
+        </Grid>
+        <TextBlock Text="AI interview prep" FontSize="12"
+                   Foreground="{StaticResource TextMutedBrush}"
+                   HorizontalAlignment="Center" Margin="0,2,0,0" />
+      </StackPanel>
+
+      <!-- Selected company -->
+      <StackPanel Grid.Row="1" Margin="16,4,16,8" IsVisible="{Binding HasWorkflow}">
+        <TextBlock Text="{Binding CompanyLabel}" FontWeight="SemiBold" FontSize="13"
+                   Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="Currently selected company" FontSize="11"
+                   Foreground="{StaticResource TextMutedBrush}" />
+      </StackPanel>
+
+      <!-- Steps + custom actions -->
+      <ScrollViewer Grid.Row="2">
+        <StackPanel>
+          <ItemsControl ItemsSource="{Binding Steps}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:StepItemViewModel">
+                <Button Classes="stepRow"
+                        Classes.active="{Binding IsActive}"
+                        Classes.locked="{Binding IsLocked}"
+                        Command="{Binding NavigateCommand}">
+                  <Grid ColumnDefinitions="Auto,10,*">
+                    <Grid Grid.Column="0">
+                      <Border Classes="tile"
+                              Classes.active="{Binding IsActive}"
+                              Classes.failed="{Binding IsFailed}">
+                        <TextBlock Text="{Binding TileGlyph}" FontSize="15"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Classes.doneGlyph="{Binding IsDone}" />
+                      </Border>
+                      <TextBlock Text="⌛" FontSize="12"
+                                 HorizontalAlignment="Right" VerticalAlignment="Top"
+                                 Margin="0,-4,-4,0"
+                                 Foreground="{StaticResource WarningAmberBrush}"
+                                 IsVisible="{Binding IsQueued}" />
+                    </Grid>
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="Medium"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="🌐" FontSize="11" Foreground="{StaticResource InfoSkyBrush}"
+                                   IsVisible="{Binding WebSearch}" />
+                        <TextBlock Text="📄" FontSize="11" Foreground="{StaticResource ResumeBadgeBrush}"
+                                   IsVisible="{Binding NeedsResume}" />
+                        <TextBlock Text="(tech)" FontSize="11" Foreground="{StaticResource InfoSkyBrush}"
+                                   IsVisible="{Binding ShowTech}" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding Description}" FontSize="11"
+                                 Foreground="{StaticResource TextMutedBrush}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Custom actions -->
+          <TextBlock Text="Custom actions" FontSize="11" FontWeight="SemiBold"
+                     Foreground="{StaticResource TextMutedBrush}"
+                     Margin="16,16,16,4" />
+          <ItemsControl ItemsSource="{Binding CustomActions}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:CustomAction">
+                <Button Classes="stepRow"
+                        Command="{Binding #Root.((vm:MainViewModel)DataContext).OpenCustomActionCommand}"
+                        CommandParameter="{Binding}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="⚡" FontSize="13" />
+                    <TextBlock Text="{Binding Name}" FontSize="13"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button Margin="12,4,12,12" HorizontalAlignment="Stretch"
+                  Background="Transparent" BorderBrush="#334155" BorderThickness="1"
+                  CornerRadius="8" Padding="8"
+                  Command="{Binding AddCustomActionCommand}">
+            <TextBlock Text="+ Add new" FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </Button>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Progress footer -->
+      <StackPanel Grid.Row="3" Margin="16,8,16,16" Spacing="6"
+                  IsVisible="{Binding HasWorkflow}">
+        <TextBlock Text="{Binding ProgressLabel}" FontSize="11"
+                   Foreground="{StaticResource TextMutedBrush}" />
+        <ProgressBar Minimum="0" Maximum="12" Value="{Binding ProgressCompleted}"
+                     Height="6" CornerRadius="3" MinWidth="0"
+                     Foreground="{StaticResource PrimaryGradientBrush}"
+                     Background="#1E293B" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

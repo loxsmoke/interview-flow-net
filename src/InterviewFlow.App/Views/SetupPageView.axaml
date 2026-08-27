@@ -1,0 +1,110 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             xmlns:state="using:InterviewFlow.Core.State"
+             xmlns:views="using:InterviewFlow.App.Views"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.SetupPageView"
+             x:DataType="pages:SetupPageViewModel"
+             x:Name="Root">
+  <Design.DataContext>
+    <pages:SetupPageViewModel />
+  </Design.DataContext>
+
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" MaxWidth="1100" HorizontalAlignment="Stretch">
+
+    <!-- Header: title + provider chip, right-aligned Save & Continue (§3.2) -->
+    <DockPanel Grid.Row="0" Margin="0,0,0,16">
+      <Button DockPanel.Dock="Right" Classes="primary" Content="Save &amp; Continue →"
+              Command="{Binding SaveAndContinueCommand}" VerticalAlignment="Top" />
+      <StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <TextBlock Text="Setup" FontSize="24" FontWeight="Bold"
+                     Foreground="{StaticResource TextPrimaryBrush}" />
+          <Border CornerRadius="6" Padding="8,3" VerticalAlignment="Center"
+                  Background="#14532D" IsVisible="{Binding ProviderConfigured}">
+            <TextBlock Text="{Binding ProviderChip}" FontSize="11" Foreground="#86EFAC" />
+          </Border>
+          <Border CornerRadius="6" Padding="8,3" VerticalAlignment="Center"
+                  Background="#451A03" IsVisible="{Binding !ProviderConfigured}">
+            <TextBlock Text="No AI provider configured" FontSize="11"
+                       Foreground="{StaticResource WarningAmberBrush}" />
+          </Border>
+        </StackPanel>
+        <TextBlock Text="Paste the job posting and name this application"
+                   FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0" />
+      </StackPanel>
+    </DockPanel>
+
+    <!-- New application -->
+    <Button Grid.Row="1" Classes="subtle" Content="New application"
+            Command="{Binding NewApplicationCommand}" Margin="0,0,0,12" />
+
+    <!-- Previous applications -->
+    <Expander Grid.Row="2" Header="{Binding SavedHeader}" Margin="0,0,0,16"
+              Background="{StaticResource PanelBackgroundBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
+              CornerRadius="12" HorizontalAlignment="Stretch">
+      <ItemsControl ItemsSource="{Binding SavedApplications}" Margin="4">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="state:StateSummary">
+            <Grid ColumnDefinitions="Auto,12,*,Auto,8,Auto" Margin="8,4">
+              <Button Grid.Column="0" Classes="subtle" Content="Select"
+                      Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).SelectCommand}"
+                      CommandParameter="{Binding}" />
+              <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding CompanyName}" FontSize="13" FontWeight="Medium"
+                             Foreground="{StaticResource TextPrimaryBrush}" />
+                  <TextBlock Text="—" FontSize="13" Foreground="{StaticResource TextMutedBrush}"
+                             IsVisible="{Binding Position, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                  <TextBlock Text="{Binding Position}" FontSize="13"
+                             Foreground="{StaticResource TextMutedBrush}" />
+                </StackPanel>
+                <TextBlock FontSize="11" Foreground="#64748B"
+                           Text="{Binding Converter={x:Static views:SummaryDetailConverter.Instance}}" />
+              </StackPanel>
+              <Button Grid.Column="3" Classes="subtle" Content="Clone"
+                      Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).CloneCommand}"
+                      CommandParameter="{Binding}" />
+              <Button Grid.Column="5" Classes="danger" Content="Delete"
+                      Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).DeleteCommand}"
+                      CommandParameter="{Binding}" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Expander>
+
+    <!-- Company / Position -->
+    <Grid Grid.Row="3" ColumnDefinitions="*,16,*" Margin="0,0,0,16">
+      <StackPanel Grid.Column="0" Spacing="6">
+        <TextBlock Text="Company Name" FontSize="12" FontWeight="Medium"
+                   Foreground="{StaticResource TextMutedBrush}" />
+        <TextBox Classes="field" Text="{Binding CompanyName}" Watermark="Acme Inc." />
+        <TextBlock Text="Text after | is treated as a comment and stripped in exports"
+                   FontSize="11" Foreground="#64748B" />
+      </StackPanel>
+      <StackPanel Grid.Column="2" Spacing="6">
+        <TextBlock Text="Position" FontSize="12" FontWeight="Medium"
+                   Foreground="{StaticResource TextMutedBrush}" />
+        <TextBox Classes="field" Text="{Binding Position}" Watermark="Staff Software Engineer" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Job posting -->
+    <Grid Grid.Row="4" RowDefinitions="Auto,Auto,*">
+      <TextBlock Grid.Row="0" Text="Job Posting (paste text, or a URL to fetch)" FontSize="12"
+                 FontWeight="Medium" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6" />
+      <TextBlock Grid.Row="1" Text="{Binding FetchStatus}" FontSize="11" TextWrapping="Wrap"
+                 Foreground="{StaticResource InfoSkyBrush}" Margin="0,0,0,6"
+                 IsVisible="{Binding HasFetchStatus}" />
+      <TextBox Grid.Row="2" Classes="field" Text="{Binding JobPosting}"
+               AcceptsReturn="True" TextWrapping="Wrap"
+               VerticalContentAlignment="Top"
+               Watermark="Paste the full job posting here — or a link to it…" />
+    </Grid>
+  </Grid>
+</UserControl>

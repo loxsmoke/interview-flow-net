@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             xmlns:controls="using:InterviewFlow.App.Controls"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.MockInterviewPageView"
+             x:DataType="pages:MockInterviewPageViewModel">
+
+  <UserControl.Styles>
+    <Style Selector="Button.formatTile">
+      <Setter Property="Background" Value="{StaticResource PanelBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource PanelBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="20" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.formatTile.selected">
+      <Setter Property="BorderBrush" Value="{StaticResource AccentIndigoBrush}" />
+      <Setter Property="Background" Value="#1E293B" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Mock Interview (§3.6): setup tiles → chat. -->
+  <Grid RowDefinitions="Auto,*" MaxWidth="1100">
+
+    <DockPanel Grid.Row="0" Margin="0,0,0,16">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
+        <Button Classes="subtle" Content="New Interview" Command="{Binding NewInterviewCommand}"
+                IsVisible="{Binding InInterview}" />
+        <Button Classes="subtle" Content="Continue →" Command="{Binding ContinueCommand}" />
+      </StackPanel>
+      <StackPanel>
+        <TextBlock Text="Mock Interview" FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}" IsVisible="{Binding ShowSetup}" />
+        <TextBlock Text="{Binding ChatHeader}" FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}" IsVisible="{Binding InInterview}" />
+        <TextBlock Text="Practice with AI interviewer" FontSize="13"
+                   Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0" />
+      </StackPanel>
+    </DockPanel>
+
+    <!-- Setup: format tiles -->
+    <StackPanel Grid.Row="1" IsVisible="{Binding ShowSetup}" Spacing="16" VerticalAlignment="Top">
+      <ItemsControl ItemsSource="{Binding Formats}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="3" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="pages:FormatTileViewModel">
+            <Button Classes="formatTile" Classes.selected="{Binding IsSelected}"
+                    Command="{Binding SelectCommand}" Margin="0,0,12,12">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Icon}" FontSize="28" HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding Label}" FontSize="14" FontWeight="Medium"
+                           HorizontalAlignment="Center"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Button Classes="primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+              Content="{Binding StartButtonText}" Command="{Binding StartInterviewCommand}" />
+    </StackPanel>
+
+    <!-- Chat -->
+    <controls:ChatPanel Grid.Row="1" DataContext="{Binding Chat}"
+                        IsVisible="{Binding $parent[UserControl].((pages:MockInterviewPageViewModel)DataContext).InInterview}" />
+  </Grid>
+</UserControl>

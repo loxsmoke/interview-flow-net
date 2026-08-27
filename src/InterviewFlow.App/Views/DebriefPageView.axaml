@@ -1,0 +1,40 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.DebriefPageView"
+             x:DataType="pages:DebriefPageViewModel">
+
+  <!-- Debrief (§3.8): total cost + notes editor. -->
+  <Grid RowDefinitions="Auto,*,Auto" MaxWidth="1100">
+    <StackPanel Grid.Row="0" Margin="0,0,0,12">
+      <StackPanel Orientation="Horizontal" Spacing="10">
+        <TextBlock Text="Debrief" FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}" />
+        <Border Background="#1E293B" CornerRadius="6" Padding="8,3" VerticalAlignment="Center"
+                ToolTip.Tip="{Binding CostDetail}">
+          <TextBlock Text="{Binding CostLabel}" FontSize="11"
+                     Foreground="{StaticResource TextMutedBrush}" />
+        </Border>
+      </StackPanel>
+      <TextBlock Text="Post-interview reflection" FontSize="13"
+                 Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0" />
+    </StackPanel>
+
+    <TextBox Grid.Row="1" Classes="field" Text="{Binding Notes}"
+             AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
+             Watermark="How did it go? What worked, what didn't, what to change next time…" />
+
+    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,12,0,0">
+      <Button Classes="subtle" Content="Insert timestamp" Command="{Binding InsertTimestampCommand}" />
+      <Button Classes="primary" Command="{Binding SaveDebriefCommand}">
+        <Panel>
+          <TextBlock Text="Save Debrief" IsVisible="{Binding !JustSaved}" />
+          <TextBlock Text="✓ Saved!" IsVisible="{Binding JustSaved}" />
+        </Panel>
+      </Button>
+    </StackPanel>
+  </Grid>
+</UserControl>

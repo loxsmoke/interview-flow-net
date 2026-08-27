@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "actions": [
+    {
+      "id": "36161ba18915",
+      "name": "What question to ask",
+      "description": "Questions to ask during interview",
+      "prompt_template": "Company: {{company_name}}\nPosition: {{position}}\n\nInterview intel: {{interview_intel}}\n",
+      "temperature": null,
+      "created_at": "2026-06-24T13:52:06.973452"
+    },
+    {
+      "id": "47272cb29026",
+      "name": "Follow-up email",
+      "description": "Draft a thank-you note",
+      "prompt_template": "Résumé: {{resume}} 🚀",
+      "temperature": 0.7,
+      "created_at": "2026-07-01T10:00:00.000001"
+    },
+    {
+      "id": "58383dc3a137",
+      "name": "Corrupt one",
+      "temperature": "not-a-number"
+    }
+  ]
+}

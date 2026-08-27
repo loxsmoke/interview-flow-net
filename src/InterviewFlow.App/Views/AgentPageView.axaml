@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             xmlns:views="using:InterviewFlow.App.Views"
+             xmlns:controls="using:InterviewFlow.App.Controls"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.AgentPageView"
+             x:DataType="pages:AgentPageViewModel">
+
+  <!-- Generic agent screen (§3.4). -->
+  <Grid RowDefinitions="Auto,Auto,*" MaxWidth="1100">
+
+    <!-- Header: title + badges + cost + description -->
+    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
+        <views:AgentRunHeaderView DataContext="{Binding Run}" />
+        <Button Classes="subtle" Content="Continue →" Command="{Binding ContinueCommand}" />
+      </StackPanel>
+      <StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold"
+                     Foreground="{StaticResource TextPrimaryBrush}" />
+          <TextBlock Text="🌐" FontSize="14" VerticalAlignment="Center"
+                     Foreground="{StaticResource InfoSkyBrush}" IsVisible="{Binding WebSearch}" />
+          <controls:CostBadge CostUsd="{Binding CostUsd}" Detail="{Binding CostDetail}" />
+        </StackPanel>
+        <TextBlock Text="{Binding Description}" FontSize="13"
+                   Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0" />
+      </StackPanel>
+    </DockPanel>
+
+    <!-- Running: progress + live trace -->
+    <StackPanel Grid.Row="1" Spacing="8" IsVisible="{Binding Run.IsRunningHere}" Margin="0,0,0,8">
+      <ProgressBar IsIndeterminate="True" Height="4"
+                   Foreground="{StaticResource PrimaryGradientBrush}" Background="#1E293B" />
+    </StackPanel>
+
+    <Grid Grid.Row="2">
+      <ScrollViewer IsVisible="{Binding Run.IsRunningHere}">
+        <controls:LiveTracePanel DataContext="{Binding Run.Trace}" />
+      </ScrollViewer>
+
+      <StackPanel IsVisible="{Binding Run.HasError}" Spacing="8" VerticalAlignment="Top">
+        <Border Background="#431407" BorderBrush="#9A3412" BorderThickness="1" CornerRadius="8" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding Run.ErrorMessage}" FontSize="13" TextWrapping="Wrap"
+                       Foreground="{StaticResource SearchWarningTextBrush}" />
+            <Expander Header="Details" FontSize="12"
+                      IsVisible="{Binding Run.ErrorDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <SelectableTextBlock Text="{Binding Run.ErrorDetail}" FontSize="11" TextWrapping="Wrap"
+                                   FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                                   Foreground="{StaticResource TextMutedBrush}" />
+            </Expander>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <Border IsVisible="{Binding Run.ShowResult}"
+              Background="{StaticResource PanelBackgroundBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
+              CornerRadius="12" Padding="24">
+        <Grid>
+          <ScrollViewer IsVisible="{Binding HasReport}">
+            <controls:MarkdownView Markdown="{Binding Report}" />
+          </ScrollViewer>
+          <TextBlock IsVisible="{Binding !HasReport}"
+                     Text="No report yet — hit Run AI to generate one."
+                     FontSize="13" Foreground="#64748B"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

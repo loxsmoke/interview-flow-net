@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- ADR-001b: mermaid runs in-process under Jint over the MermaidDom shim. -->
+    <PackageReference Include="Jint" Version="4.16.1" />
+    <!-- Resume pipeline (docs/06): DOCX read/write + PDF text extraction. -->
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.5.1" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+    <!-- Observability (docs/05 §5.8): replaces the original's Langfuse tracing. -->
+    <PackageReference Include="OpenTelemetry" Version="1.18.0" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.18.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Rendering\MermaidDom.js" />
+    <EmbeddedResource Include="Prompts\Templates\*.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="InterviewFlow.Tests" />
+  </ItemGroup>
+
+</Project>

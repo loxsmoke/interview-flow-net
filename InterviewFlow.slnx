@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/InterviewFlow.App/InterviewFlow.App.csproj" />
+    <Project Path="src/InterviewFlow.Core/InterviewFlow.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/InterviewFlow.Tests/InterviewFlow.Tests.csproj" />
+  </Folder>
+</Solution>

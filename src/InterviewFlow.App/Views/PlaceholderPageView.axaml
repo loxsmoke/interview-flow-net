@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.PlaceholderPageView"
+             x:DataType="pages:PlaceholderPageViewModel">
+
+  <StackPanel MaxWidth="672" HorizontalAlignment="Left" Spacing="8">
+    <StackPanel Orientation="Horizontal" Spacing="12">
+      <TextBlock Text="{Binding Icon}" FontSize="24" VerticalAlignment="Center" />
+      <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold"
+                 Foreground="{StaticResource TextPrimaryBrush}" />
+    </StackPanel>
+    <TextBlock Text="{Binding Description}" FontSize="13"
+               Foreground="{StaticResource TextMutedBrush}" />
+    <Border Background="{StaticResource PanelBackgroundBrush}"
+            BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
+            CornerRadius="12" Padding="16" Margin="0,16,0,0">
+      <TextBlock FontSize="13" Foreground="{StaticResource TextMutedBrush}" TextWrapping="Wrap">
+        <Run Text="This screen is coming in " /><Run Text="{Binding Milestone}" FontWeight="SemiBold" Foreground="{StaticResource ProseTextBrush}" /><Run Text=". Navigation, workflow selection and data storage already work." />
+      </TextBlock>
+    </Border>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:InterviewFlow.App.ViewModels"
+        xmlns:controls="using:InterviewFlow.App.Controls"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="900"
+        x:Class="InterviewFlow.App.Views.DevMarkdownWindow"
+        x:DataType="vm:DevMarkdownViewModel"
+        Title="Interview Flow — markdown/mermaid debug"
+        Width="1400" Height="900"
+        MinWidth="900" MinHeight="600"
+        Background="{StaticResource PageBackgroundBrush}">
+  <Design.DataContext>
+    <vm:DevMarkdownViewModel />
+  </Design.DataContext>
+
+  <!-- Dev harness (F12 from the main window): markdown source left, rendered
+       output right, live re-render. Doubles as the mermaid debug window. -->
+  <Grid ColumnDefinitions="*,8,*" Margin="16">
+    <Border Grid.Column="0"
+            Background="{StaticResource PanelBackgroundBrush}"
+            BorderBrush="{StaticResource PanelBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="12"
+            Padding="8">
+      <TextBox Text="{Binding MarkdownSource}"
+               AcceptsReturn="True"
+               TextWrapping="Wrap"
+               FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+               FontSize="12"
+               Background="Transparent"
+               BorderThickness="0" />
+    </Border>
+
+    <GridSplitter Grid.Column="1" Background="Transparent" ResizeDirection="Columns" />
+
+    <Border Grid.Column="2"
+            Background="{StaticResource PanelBackgroundBrush}"
+            BorderBrush="{StaticResource PanelBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="12"
+            Padding="24">
+      <ScrollViewer>
+        <controls:MarkdownView Markdown="{Binding MarkdownSource}" />
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</Window>

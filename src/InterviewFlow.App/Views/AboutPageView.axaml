@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.AboutPageView"
+             x:DataType="pages:AboutPageViewModel">
+
+  <!-- About page — content mirrors the original AboutStep (§3.10). -->
+  <ScrollViewer MaxWidth="672" HorizontalAlignment="Left">
+    <StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,4">
+        <TextBlock Text="Interview Flow" FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}" />
+        <TextBlock Text="{Binding Version, StringFormat='v{0}'}" FontSize="13"
+                   FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                   Foreground="#64748B" VerticalAlignment="Bottom" Margin="0,0,0,4" />
+      </StackPanel>
+      <TextBlock Text="AI-powered interview coaching — research, prep, practice, and debrief in one place."
+                 FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,32" />
+
+      <TextBlock Text="WHAT IT DOES" FontSize="11" FontWeight="SemiBold" LetterSpacing="1"
+                 Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,12" />
+      <ItemsControl ItemsSource="{Binding Features}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="pages:AboutPageViewModel+FeatureRow">
+            <Grid ColumnDefinitions="28,*" Margin="0,0,0,8">
+              <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="13" HorizontalAlignment="Center" />
+              <TextBlock Grid.Column="1" FontSize="13" TextWrapping="Wrap"
+                         Foreground="{StaticResource ProseTextBrush}">
+                <Run Text="{Binding Label}" FontWeight="SemiBold" Foreground="#E2E8F0" /><Run Text=" — " /><Run Text="{Binding Description}" />
+              </TextBlock>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <TextBlock Text="SOURCE" FontSize="11" FontWeight="SemiBold" LetterSpacing="1"
+                 Foreground="{StaticResource TextMutedBrush}" Margin="0,24,0,12" />
+      <StackPanel Orientation="Horizontal" Spacing="4">
+        <TextBlock Text="Open source at" FontSize="13" Foreground="{StaticResource TextMutedBrush}"
+                   VerticalAlignment="Center" />
+        <Button Background="Transparent" Padding="0" Cursor="Hand"
+                Command="{Binding OpenGitHubCommand}">
+          <TextBlock Text="loxsmoke/interview-flow" FontSize="13"
+                     Foreground="#A5B4FC" TextDecorations="Underline" />
+        </Button>
+      </StackPanel>
+
+      <TextBlock Text="BUILT WITH" FontSize="11" FontWeight="SemiBold" LetterSpacing="1"
+                 Foreground="{StaticResource TextMutedBrush}" Margin="0,24,0,12" />
+      <StackPanel Spacing="4">
+        <TextBlock FontSize="13" Foreground="{StaticResource TextMutedBrush}">
+          <Run Text=".NET port" FontWeight="Medium" Foreground="{StaticResource ProseTextBrush}" /><Run Text=" — C# · Avalonia · Markdig · Jint" />
+        </TextBlock>
+        <TextBlock FontSize="13" Foreground="{StaticResource TextMutedBrush}">
+          <Run Text="Rendering" FontWeight="Medium" Foreground="{StaticResource ProseTextBrush}" /><Run Text=" — native markdown + in-process Mermaid via Svg.Skia" />
+        </TextBlock>
+        <TextBlock FontSize="13" Foreground="{StaticResource TextMutedBrush}">
+          <Run Text="AI" FontWeight="Medium" Foreground="{StaticResource ProseTextBrush}" /><Run Text=" — Anthropic Claude · OpenAI · Gemini · Ollama (local)" />
+        </TextBlock>
+        <TextBlock FontSize="13" Foreground="{StaticResource TextMutedBrush}">
+          <Run Text="Original" FontWeight="Medium" Foreground="{StaticResource ProseTextBrush}" /><Run Text=" — Python · FastAPI · React (data-compatible)" />
+        </TextBlock>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,26 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InterviewFlow.App.Views.ConfirmWindow"
+        Width="420" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent">
+  <!-- Modal confirm (docs/03-ui-spec.md §3.12): dark rounded panel, Cancel +
+       destructive Confirm; result via ShowDialog<bool> (openlogi convention). -->
+  <Border Background="{StaticResource PanelBackgroundBrush}"
+          BorderBrush="{StaticResource PanelBorderBrush}"
+          BorderThickness="1" CornerRadius="16" Padding="24" Margin="8">
+    <StackPanel Spacing="8">
+      <TextBlock x:Name="TitleText" FontSize="17" FontWeight="SemiBold"
+                 Foreground="{StaticResource TextPrimaryBrush}" />
+      <TextBlock x:Name="MessageText" FontSize="13" TextWrapping="Wrap"
+                 Foreground="{StaticResource TextMutedBrush}" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,16,0,0">
+        <Button Classes="subtle" Content="Cancel" Click="OnCancel" />
+        <Button x:Name="ConfirmButton" Classes="danger" Click="OnConfirm" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</Window>

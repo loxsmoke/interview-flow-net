@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:InterviewFlow.App.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="InterviewFlow.App.Controls.LiveTracePanel"
+             x:DataType="vm:LiveTraceViewModel">
+  <Design.DataContext>
+    <vm:LiveTraceViewModel />
+  </Design.DataContext>
+
+  <!-- Live query trace (§3.4): system/user prompts collapsed, streaming
+       response expanded with pinned auto-scroll, web activity, rate-limit
+       countdown. -->
+  <StackPanel Spacing="8">
+    <Border Background="#431407" BorderBrush="#9A3412" BorderThickness="1" CornerRadius="8"
+            Padding="12,8" IsVisible="{Binding HasRateLimitCountdown}">
+      <TextBlock FontSize="12" Foreground="{StaticResource WarningAmberBrush}"
+                 Text="{Binding RateLimitRemaining, StringFormat='Rate limited — retrying in {0}s…'}" />
+    </Border>
+
+    <Expander Header="System Prompt" IsExpanded="False"
+              Background="{StaticResource PanelBackgroundBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="8"
+              HorizontalAlignment="Stretch">
+      <ScrollViewer MaxHeight="200">
+        <SelectableTextBlock Text="{Binding SystemPrompt}" FontSize="12" TextWrapping="Wrap"
+                             FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                             Foreground="{StaticResource TextMutedBrush}" Margin="8" />
+      </ScrollViewer>
+    </Expander>
+
+    <Expander IsExpanded="False"
+              Background="{StaticResource PanelBackgroundBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="8"
+              HorizontalAlignment="Stretch">
+      <Expander.Header>
+        <DockPanel LastChildFill="False">
+          <TextBlock Text="User Prompt" VerticalAlignment="Center" />
+          <Button DockPanel.Dock="Right" Classes="subtle" Padding="8,2" FontSize="11"
+                  Content="Copy" Click="OnCopyUserPrompt" />
+        </DockPanel>
+      </Expander.Header>
+      <ScrollViewer MaxHeight="200">
+        <SelectableTextBlock Text="{Binding UserPrompt}" FontSize="12" TextWrapping="Wrap"
+                             FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                             Foreground="{StaticResource TextMutedBrush}" Margin="8" />
+      </ScrollViewer>
+    </Expander>
+
+    <Expander Header="Streaming Response" IsExpanded="True"
+              Background="{StaticResource PanelBackgroundBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="8"
+              HorizontalAlignment="Stretch">
+      <ScrollViewer x:Name="ResponseScroll" MaxHeight="256" ScrollChanged="OnResponseScrollChanged">
+        <SelectableTextBlock x:Name="ResponseBlock" Text="{Binding ResponseText}" FontSize="12"
+                             TextWrapping="Wrap"
+                             FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                             Foreground="{StaticResource ProseTextBrush}" Margin="8" />
+      </ScrollViewer>
+    </Expander>
+
+    <Expander Header="{Binding WebActivityHeader}" IsExpanded="False"
+              Background="{StaticResource PanelBackgroundBrush}"
+              BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="8"
+              HorizontalAlignment="Stretch"
+              IsVisible="{Binding WebActivity.Count}">
+      <ItemsControl ItemsSource="{Binding WebActivity}" Margin="8">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:LiveTraceViewModel+WebActivityRow">
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,1">
+              <TextBlock Text="{Binding Icon}" FontSize="12" />
+              <TextBlock Text="{Binding Text}" FontSize="12"
+                         Foreground="{StaticResource TextMutedBrush}"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Expander>
+  </StackPanel>
+</UserControl>

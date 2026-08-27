@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:InterviewFlow.App.ViewModels"
+             x:Class="InterviewFlow.App.Views.AgentRunHeaderView"
+             x:DataType="vm:AgentRunViewModel">
+  <!-- Split Run button + queue dropdown (§3.4). -->
+  <StackPanel Orientation="Horizontal" Spacing="1">
+    <Button Classes="primary" CornerRadius="12,0,0,12"
+            Content="{Binding RunState.Label}"
+            IsEnabled="{Binding RunState.IsEnabled}"
+            Command="{Binding RunCommand}" />
+    <Button Classes="primary" CornerRadius="0,12,12,0" Padding="10,10">
+      <TextBlock Text="▾" FontSize="12" />
+      <Button.Flyout>
+        <Flyout Placement="BottomEdgeAlignedRight">
+          <StackPanel MinWidth="220" Spacing="2">
+            <TextBlock Text="Queue sections" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{StaticResource TextMutedBrush}" Margin="4,2,4,6" />
+            <ItemsControl ItemsSource="{Binding DropdownItems}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:QueueDropdownItemViewModel">
+                  <CheckBox IsChecked="{Binding IsChecked, Mode=OneWay}"
+                            IsEnabled="{Binding IsEnabled}"
+                            Command="{Binding ToggleCommand}"
+                            FontSize="13" Padding="6,2">
+                    <TextBlock Text="{Binding Title}" />
+                  </CheckBox>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Flyout>
+      </Button.Flyout>
+    </Button>
+  </StackPanel>
+</UserControl>

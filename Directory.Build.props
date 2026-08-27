@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>14</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Core treats warnings as errors; the App (XAML/generated code) and Tests opt out locally. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

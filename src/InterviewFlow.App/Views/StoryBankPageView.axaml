@@ -1,0 +1,140 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             xmlns:views="using:InterviewFlow.App.Views"
+             xmlns:controls="using:InterviewFlow.App.Controls"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.StoryBankPageView"
+             x:DataType="pages:StoryBankPageViewModel">
+
+  <!-- Story Bank (§3.5): collapsible STAR cards. -->
+  <Grid RowDefinitions="Auto,Auto,*" MaxWidth="1100">
+    <DockPanel Grid.Row="0" Margin="0,0,0,12">
+      <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
+        <views:AgentRunHeaderView DataContext="{Binding Run}" />
+        <Button Classes="subtle" Content="Continue →" Command="{Binding ContinueCommand}" />
+      </StackPanel>
+      <StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Text="Story Bank" FontSize="24" FontWeight="Bold"
+                     Foreground="{StaticResource TextPrimaryBrush}" />
+          <controls:CostBadge CostUsd="{Binding CostUsd}" Detail="{Binding CostDetail}" />
+        </StackPanel>
+        <TextBlock Text="Mine &amp; manage your stories" FontSize="13"
+                   Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0" />
+      </StackPanel>
+    </DockPanel>
+
+    <StackPanel Grid.Row="1" IsVisible="{Binding Run.IsRunningHere}" Margin="0,0,0,8">
+      <ProgressBar IsIndeterminate="True" Height="4"
+                   Foreground="{StaticResource PrimaryGradientBrush}" Background="#1E293B" />
+    </StackPanel>
+
+    <Grid Grid.Row="2">
+      <ScrollViewer IsVisible="{Binding Run.IsRunningHere}">
+        <controls:LiveTracePanel DataContext="{Binding Run.Trace}" />
+      </ScrollViewer>
+
+      <Border IsVisible="{Binding Run.HasError}" VerticalAlignment="Top"
+              Background="#431407" BorderBrush="#9A3412" BorderThickness="1" CornerRadius="8" Padding="16">
+        <TextBlock Text="{Binding Run.ErrorMessage}" FontSize="13" TextWrapping="Wrap"
+                   Foreground="{StaticResource SearchWarningTextBrush}" />
+      </Border>
+
+      <ScrollViewer IsVisible="{Binding Run.ShowResult}">
+        <StackPanel Spacing="8">
+          <TextBlock IsVisible="{Binding !HasStories}"
+                     Text="No stories yet — hit Run AI to mine STAR stories from your resume."
+                     FontSize="13" Foreground="#64748B" Margin="0,32,0,0"
+                     HorizontalAlignment="Center" />
+          <ItemsControl ItemsSource="{Binding Stories}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:StoryCardViewModel">
+                <Expander IsExpanded="{Binding IsExpanded}" Margin="0,0,0,8"
+                          Background="{StaticResource PanelBackgroundBrush}"
+                          BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
+                          CornerRadius="12" HorizontalAlignment="Stretch">
+                  <Expander.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="📖" FontSize="14" />
+                      <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                 Foreground="{StaticResource TextPrimaryBrush}" />
+                      <ItemsControl ItemsSource="{Binding TagChips}">
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="x:String">
+                            <Border Background="#1E293B" CornerRadius="4" Padding="6,1">
+                              <TextBlock Text="{Binding}" FontSize="10"
+                                         Foreground="{StaticResource TextMutedBrush}" />
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Expander.Header>
+                  <StackPanel Spacing="10" Margin="8">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="SITUATION" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"
+                                 Foreground="{StaticResource AccentIndigoBrush}" />
+                      <SelectableTextBlock Text="{Binding Story.Situation}" FontSize="13" TextWrapping="Wrap"
+                                 Foreground="{StaticResource ProseTextBrush}" />
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="TASK" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"
+                                 Foreground="{StaticResource AccentIndigoBrush}" />
+                      <SelectableTextBlock Text="{Binding Story.Task}" FontSize="13" TextWrapping="Wrap"
+                                 Foreground="{StaticResource ProseTextBrush}" />
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="ACTION" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"
+                                 Foreground="{StaticResource AccentIndigoBrush}" />
+                      <SelectableTextBlock Text="{Binding Story.Action}" FontSize="13" TextWrapping="Wrap"
+                                 Foreground="{StaticResource ProseTextBrush}" />
+                    </StackPanel>
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="RESULT" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"
+                                 Foreground="{StaticResource AccentIndigoBrush}" />
+                      <SelectableTextBlock Text="{Binding Story.Result}" FontSize="13" TextWrapping="Wrap"
+                                 Foreground="{StaticResource ProseTextBrush}" />
+                    </StackPanel>
+                    <Border IsVisible="{Binding HasEarnedSecret}"
+                            Background="#2E1065" BorderBrush="#6B21A8" BorderThickness="1"
+                            CornerRadius="8" Padding="12,8">
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="EARNED SECRET" FontSize="10" FontWeight="SemiBold" LetterSpacing="1"
+                                   Foreground="#C084FC" />
+                        <SelectableTextBlock Text="{Binding Story.EarnedSecret}" FontSize="13" TextWrapping="Wrap"
+                                   Foreground="{StaticResource ProseTextBrush}" />
+                      </StackPanel>
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding FitChips}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="pages:StoryCardViewModel+FitScoreChip">
+                          <Border Background="#1E293B" CornerRadius="6" Padding="8,3" Margin="0,0,6,4">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                              <TextBlock Text="{Binding Category}" FontSize="11"
+                                         Foreground="{StaticResource TextMutedBrush}" />
+                              <TextBlock Text="{Binding Rating}" FontSize="11" FontWeight="SemiBold"
+                                         Foreground="{Binding Color}" />
+                            </StackPanel>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Expander>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </Grid>
+</UserControl>

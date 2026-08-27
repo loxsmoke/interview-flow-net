@@ -1,0 +1,270 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             xmlns:views="using:InterviewFlow.App.Views"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.ConfigPageView"
+             x:DataType="pages:ConfigPageViewModel"
+             x:Name="Root">
+  <Design.DataContext>
+    <pages:ConfigPageViewModel />
+  </Design.DataContext>
+
+  <UserControl.Styles>
+    <Style Selector="Border.providerCard">
+      <Setter Property="Background" Value="{StaticResource PanelBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource PanelBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="16" />
+    </Style>
+    <Style Selector="Border.providerCard.active">
+      <Setter Property="BorderBrush" Value="{StaticResource AccentIndigoBrush}" />
+    </Style>
+    <Style Selector="TextBlock.sectionLabel">
+      <Setter Property="FontSize" Value="10" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="LetterSpacing" Value="1" />
+      <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+    <Style Selector="TextBlock.fieldLabel">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{StaticResource TextMutedBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <!-- Configuration (§3.11). -->
+  <ScrollViewer>
+    <StackPanel MaxWidth="820" HorizontalAlignment="Left" Spacing="16">
+      <StackPanel>
+        <TextBlock Text="Configuration" FontSize="24" FontWeight="Bold"
+                   Foreground="{StaticResource TextPrimaryBrush}" />
+        <TextBlock Text="AI provider, resume details, and where your data lives" FontSize="13"
+                   Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0" />
+      </StackPanel>
+
+      <TextBlock Text="{Binding FetchStatus}" FontSize="12" TextWrapping="Wrap"
+                 Foreground="{StaticResource InfoSkyBrush}"
+                 IsVisible="{Binding FetchStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+      <TextBlock Classes="sectionLabel" Text="AI PROVIDER" Margin="0,8,0,0" />
+
+      <!-- Anthropic -->
+      <Border Classes="providerCard" Classes.active="{Binding IsAnthropic}">
+        <StackPanel Spacing="10">
+          <DockPanel>
+            <Border DockPanel.Dock="Right" CornerRadius="6" Padding="8,3"
+                    Background="{Binding AnthropicConfigured, Converter={x:Static views:ConfigPageView.PillBackground}}"
+                   >
+              <TextBlock FontSize="10"
+                         Text="{Binding AnthropicConfigured, Converter={x:Static views:ConfigPageView.PillText}}"
+                         Foreground="{Binding AnthropicConfigured, Converter={x:Static views:ConfigPageView.PillForeground}}"
+                         />
+            </Border>
+            <RadioButton GroupName="Provider" Content="Anthropic Claude" FontWeight="SemiBold"
+                         IsChecked="{Binding IsAnthropic}" Click="OnProviderClick" Tag="anthropic" />
+          </DockPanel>
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <TextBox Grid.Column="0" Classes="field" Text="{Binding AnthropicKey}"
+                     PasswordChar="{Binding ShowAnthropicKey, Converter={x:Static views:ConfigPageView.MaskChar}}"
+                     Watermark="sk-ant-api03-…" />
+            <Button Grid.Column="1" Classes="icon" Margin="6,0,0,0" Click="OnToggleAnthropicKey"
+                    ToolTip.Tip="Show / hide key">
+              <TextBlock Text="👁" FontSize="14" />
+            </Button>
+            <Button Grid.Column="2" Classes="icon" Margin="2,0,0,0"
+                    Command="{Binding OpenKeyUrlCommand}" CommandParameter="{Binding AnthropicKeyUrl}">
+              <TextBlock Text="Get API key ↗" FontSize="11" Foreground="#818CF8" />
+            </Button>
+          </Grid>
+          <StackPanel Spacing="4">
+            <TextBlock Classes="fieldLabel" Text="Model" />
+            <ComboBox ItemsSource="{Binding AnthropicModels}" SelectedItem="{Binding SelectedAnthropicModel}" DisplayMemberBinding="{Binding Display}"
+                      HorizontalAlignment="Stretch" FontSize="12" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- OpenAI -->
+      <Border Classes="providerCard" Classes.active="{Binding IsOpenAi}">
+        <StackPanel Spacing="10">
+          <DockPanel>
+            <Border DockPanel.Dock="Right" CornerRadius="6" Padding="8,3"
+                    Background="{Binding OpenAiConfigured, Converter={x:Static views:ConfigPageView.PillBackground}}"
+                   >
+              <TextBlock FontSize="10"
+                         Text="{Binding OpenAiConfigured, Converter={x:Static views:ConfigPageView.PillText}}"
+                         Foreground="{Binding OpenAiConfigured, Converter={x:Static views:ConfigPageView.PillForeground}}"
+                         />
+            </Border>
+            <RadioButton GroupName="Provider" Content="OpenAI" FontWeight="SemiBold"
+                         IsChecked="{Binding IsOpenAi}" Click="OnProviderClick" Tag="openai" />
+          </DockPanel>
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <TextBox Grid.Column="0" Classes="field" Text="{Binding OpenAiKey}"
+                     PasswordChar="{Binding ShowOpenAiKey, Converter={x:Static views:ConfigPageView.MaskChar}}"
+                     Watermark="sk-proj-…" />
+            <Button Grid.Column="1" Classes="icon" Margin="6,0,0,0" Click="OnToggleOpenAiKey">
+              <TextBlock Text="👁" FontSize="14" />
+            </Button>
+            <Button Grid.Column="2" Classes="icon" Margin="2,0,0,0"
+                    Command="{Binding OpenKeyUrlCommand}" CommandParameter="{Binding OpenAiKeyUrl}">
+              <TextBlock Text="Get API key ↗" FontSize="11" Foreground="#818CF8" />
+            </Button>
+          </Grid>
+          <StackPanel Spacing="4">
+            <TextBlock Classes="fieldLabel" Text="Model" />
+            <ComboBox ItemsSource="{Binding OpenAiModels}" SelectedItem="{Binding SelectedOpenAiModel}" DisplayMemberBinding="{Binding Display}"
+                      HorizontalAlignment="Stretch" FontSize="12" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Gemini -->
+      <Border Classes="providerCard" Classes.active="{Binding IsGemini}">
+        <StackPanel Spacing="10">
+          <DockPanel>
+            <Border DockPanel.Dock="Right" CornerRadius="6" Padding="8,3"
+                    Background="{Binding GeminiConfigured, Converter={x:Static views:ConfigPageView.PillBackground}}"
+                   >
+              <TextBlock FontSize="10"
+                         Text="{Binding GeminiConfigured, Converter={x:Static views:ConfigPageView.PillText}}"
+                         Foreground="{Binding GeminiConfigured, Converter={x:Static views:ConfigPageView.PillForeground}}"
+                         />
+            </Border>
+            <RadioButton GroupName="Provider" Content="Google Gemini" FontWeight="SemiBold"
+                         IsChecked="{Binding IsGemini}" Click="OnProviderClick" Tag="gemini" />
+          </DockPanel>
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <TextBox Grid.Column="0" Classes="field" Text="{Binding GeminiKey}"
+                     PasswordChar="{Binding ShowGeminiKey, Converter={x:Static views:ConfigPageView.MaskChar}}"
+                     Watermark="AIza…" />
+            <Button Grid.Column="1" Classes="icon" Margin="6,0,0,0" Click="OnToggleGeminiKey">
+              <TextBlock Text="👁" FontSize="14" />
+            </Button>
+            <Button Grid.Column="2" Classes="icon" Margin="2,0,0,0"
+                    Command="{Binding OpenKeyUrlCommand}" CommandParameter="{Binding GeminiKeyUrl}">
+              <TextBlock Text="Get API key ↗" FontSize="11" Foreground="#818CF8" />
+            </Button>
+          </Grid>
+          <StackPanel Spacing="4">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="subtle" Padding="8,4" FontSize="11"
+                      Content="Fetch models" Command="{Binding FetchGeminiModelsCommand}" />
+              <TextBlock Classes="fieldLabel" Text="Model" VerticalAlignment="Center" />
+            </DockPanel>
+            <ComboBox ItemsSource="{Binding GeminiModels}" SelectedItem="{Binding SelectedGeminiModel}" DisplayMemberBinding="{Binding Display}"
+                      HorizontalAlignment="Stretch" FontSize="12" IsVisible="{Binding GeminiModels.Count}" />
+            <TextBox Classes="field" Text="{Binding GeminiModel}" FontSize="12"
+                     Watermark="gemini-3.6-flash" IsVisible="{Binding !GeminiModels.Count}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Ollama -->
+      <Border Classes="providerCard" Classes.active="{Binding IsOllama}">
+        <StackPanel Spacing="10">
+          <RadioButton GroupName="Provider" Content="Local Ollama" FontWeight="SemiBold"
+                       IsChecked="{Binding IsOllama}" Click="OnProviderClick" Tag="ollama" />
+          <StackPanel Spacing="4">
+            <TextBlock Classes="fieldLabel" Text="Base URL" />
+            <TextBox Classes="field" Text="{Binding OllamaBaseUrl}" Watermark="http://localhost:11434" />
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="subtle" Padding="8,4" FontSize="11"
+                      Content="Fetch locally available models"
+                      Command="{Binding FetchOllamaModelsCommand}" />
+              <TextBlock Classes="fieldLabel" Text="Model" VerticalAlignment="Center" />
+            </DockPanel>
+            <ComboBox ItemsSource="{Binding OllamaModels}" SelectedItem="{Binding SelectedOllamaModel}" DisplayMemberBinding="{Binding Display}"
+                      HorizontalAlignment="Stretch" FontSize="12" IsVisible="{Binding OllamaModels.Count}" />
+            <TextBox Classes="field" Text="{Binding OllamaModel}" FontSize="12"
+                     Watermark="llama3.2" IsVisible="{Binding !OllamaModels.Count}" />
+            <TextBlock FontSize="11" Foreground="{StaticResource WarningAmberBrush}" TextWrapping="Wrap"
+                       IsVisible="{Binding SelectedOllamaLacksTools}"
+                       Text="⚠ This model has no tool support — web search sections will fall back to training data." />
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <TextBlock Classes="fieldLabel" Text="Context window (num_ctx)" />
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Right" FontSize="12" VerticalAlignment="Center" Width="60"
+                         TextAlignment="Right" Foreground="{StaticResource ProseTextBrush}"
+                         Text="{Binding NumCtxLabels[0]}" x:Name="CtxLabel" />
+              <Slider Minimum="0" Maximum="7" TickFrequency="1" IsSnapToTickEnabled="True"
+                      Value="{Binding NumCtxIndex}" />
+            </DockPanel>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Resume info -->
+      <TextBlock Classes="sectionLabel" Text="RESUME INFO" Margin="0,8,0,0" />
+      <Border Classes="providerCard">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="fieldLabel" Text="Full name (used in .docx exports)" />
+            <TextBox Classes="field" Text="{Binding ResumeName}" Watermark="John Smith" />
+          </StackPanel>
+          <StackPanel Spacing="4">
+            <TextBlock Classes="fieldLabel" Text="Contact info" />
+            <TextBox Classes="field" Text="{Binding ResumeContact}"
+                     Watermark="john@example.com | Mountain View, CA" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <!-- Data storage -->
+      <TextBlock Classes="sectionLabel" Text="DATA STORAGE" Margin="0,8,0,0" />
+      <Border Classes="providerCard">
+        <StackPanel Spacing="10">
+          <StackPanel Spacing="4">
+            <TextBlock Classes="fieldLabel" Text="Data folder" />
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+              <TextBox Grid.Column="0" Classes="field" Text="{Binding PendingDataDir}" FontSize="12" />
+              <Button Grid.Column="1" Classes="subtle" Margin="6,0,0,0" Content="Default"
+                      Command="{Binding UseDefaultDataDirCommand}" />
+              <Button Grid.Column="2" Classes="subtle" Margin="6,0,0,0" Content="Browse…"
+                      Command="{Binding BrowseDataDirCommand}" />
+              <Button Grid.Column="3" Classes="primary" Margin="6,0,0,0" Padding="12,8" Content="Save"
+                      Command="{Binding SaveDataDirCommand}" />
+            </Grid>
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding DataFiles}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="pages:DataFileRow">
+                <TextBlock Text="{Binding Display}" FontSize="11"
+                           FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                           Foreground="#64748B" Margin="0,1" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock FontSize="11" Foreground="{StaticResource WarningAmberBrush}" TextWrapping="Wrap"
+                     IsVisible="{Binding !DataFiles.Count}"
+                     Text="This folder holds no workflows yet. Browse to a folder that already has your data (for example the original app's data folder) and Save to use it." />
+        </StackPanel>
+      </Border>
+
+      <!-- Config file location + import -->
+      <Border Classes="providerCard">
+        <StackPanel Spacing="4">
+          <DockPanel>
+            <Button DockPanel.Dock="Right" Classes="subtle" Padding="10,5" FontSize="11"
+                    Content="Import .env…" Command="{Binding ImportEnvCommand}"
+                    ToolTip.Tip="Replace these settings with an existing .env file" />
+            <TextBlock Classes="fieldLabel" Text="Settings file (shared with the original app)"
+                       VerticalAlignment="Center" />
+          </DockPanel>
+          <SelectableTextBlock Text="{Binding EnvPath}" FontSize="11"
+                               FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                               Foreground="{StaticResource ProseTextBrush}" />
+          <TextBlock FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,6,0,0"
+                     Text="Importing overwrites this file (the previous one is kept as .bak). Telemetry: set OTEL_EXPORTER_OTLP_ENDPOINT to export query traces over OTLP." />
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,57 @@
+(Heading 1, before=12pt) John Smith
+(No Spacing) (link, size=10pt)john.smith@gmail.com | Mountain View, CA | (underline, size=10pt)www.linkedin.com/in/(underline, size=10pt)john-smith
+
+
+(List Paragraph, before=12pt) (font=Calibri Light, size=10pt)Senior Software Engineer with (font=Calibri Light, size=10pt)0(font=Calibri Light, size=10pt) years of experience and continuous improvement.
+
+
+(List Paragraph, align=center, before=18pt, tabs=[center@3.75in, left@5.75in]) (bold, font=Raleway, size=11pt)Technical Skills
+(Normal, before=2pt) (bold, font=Calibri Light, size=10pt)Languages(bold, font=Calibri Light, size=10pt): (font=Calibri Light, size=10pt)C, C++, D, E--
+(Normal, before=2pt) (bold, font=Calibri Light, size=10pt)Database Management: (font=Calibri Light, size=10pt)SQL, NoSQL
+(Normal, before=2pt) (bold, font=Calibri Light, size=10pt)Platforms: (font=Calibri Light, size=10pt)Mac, (font=Calibri Light, size=10pt)PowerMac, silver Mac, MacBook, (font=Calibri Light, size=10pt)MacMac(font=Calibri Light, size=10pt), (font=Calibri Light, size=10pt)McfaceMac
+(Normal, before=2pt) (bold, font=Calibri Light, size=10pt)Development Tools: (font=Calibri Light, size=10pt)Command line
+(Normal, before=2pt) (bold, font=Calibri Light, size=10pt)Other: (font=Calibri Light, size=10pt)Magic AI
+
+
+(List Paragraph, align=center, before=18pt, tabs=[center@3.75in, left@5.75in]) (bold, font=Raleway, size=11pt)Professional (bold, font=Raleway, size=11pt)Experience
+
+(Normal, align=justify, before=6pt, tabs=[right@7.48in]) (bold, italic, font=Calibri Light, size=10pt)Software Engineer (bold, font=Calibri Light, size=10pt)| (bold, font=Calibri Light, size=10pt)Bigtech(bold, font=Calibri Light, size=10pt)	(bold, font=Calibri Light, size=10pt)1/(bold, font=Calibri Light, size=10pt)20(bold, font=Calibri Light, size=10pt)20(bold, font=Calibri Light, size=10pt) (bold, font=Calibri Light, size=10pt)–(bold, font=Calibri Light, size=10pt) (bold, font=Calibri Light, size=10pt)2(bold, font=Calibri Light, size=10pt)/202(bold, font=Calibri Light, size=10pt)1
+(Normal, before=5pt) (font=Calibri Light, size=10pt)Made impact.
+(Normal, indent=0.6cm, before=4pt, numPr(id=3,lvl=0,fmt=bullet,char='▪')) ▪ (font=Calibri Light, size=10pt)Increase increment by 100%
+(Normal, indent=0.6cm, before=4pt, numPr(id=3,lvl=0,fmt=bullet,char='▪')) ▪ (font=Calibri Light, size=10pt)Made percentage bigger.
+(Normal, indent=0.6cm, before=4pt, numPr(id=3,lvl=0,fmt=bullet,char='▪')) ▪ (font=Calibri Light, size=10pt)Solved world hunger.
+
+
+(Normal, align=justify, before=15pt, tabs=[right@7.48in]) (bold, italic, font=Calibri Light, size=10pt)Coffee Engineer (bold, font=Calibri Light, size=10pt)| (bold, font=Calibri Light, size=10pt)Cafe(bold, font=Calibri Light, size=10pt)	(bold, font=Calibri Light, size=10pt)1/20(bold, font=Calibri Light, size=10pt)19(bold, font=Calibri Light, size=10pt) – (bold, font=Calibri Light, size=10pt)1/202(bold, font=Calibri Light, size=10pt)0
+(Normal, before=5pt) (font=Calibri Light, size=10pt)Revolutionized coffee technology.
+(Normal, indent=0.6cm, before=4pt, numPr(id=3,lvl=0,fmt=bullet,char='▪')) ▪ (font=Calibri Light, size=10pt)Improved coffee.
+(Normal, indent=0.6cm, before=4pt, numPr(id=3,lvl=0,fmt=bullet,char='▪')) ▪ (font=Calibri Light, size=10pt)More improved coffee.
+(Normal, indent=0.6cm, before=4pt, numPr(id=3,lvl=0,fmt=bullet,char='▪')) ▪ (font=Calibri Light, size=10pt)Reached top level coffee.
+
+
+(List Paragraph, align=center, before=18pt, tabs=[center@3.75in, left@5.75in]) (bold, font=Raleway, size=11pt)Early Career (bold, font=Raleway, size=11pt)Experience(bold, font=Raleway, size=11pt) 
+
+(Normal, align=justify, before=6pt, tabs=[right@7.48in]) (bold, italic, font=Calibri Light, size=10pt)Catsitter(bold, italic, font=Calibri Light, size=10pt) (bold, font=Calibri Light, size=10pt)| (bold, font=Calibri Light, size=10pt)Catology
+
+(Normal, before=6pt) (font=Calibri Light, size=10pt)Had a cat.
+(Normal, indent=0.6cm, before=4pt, numPr(id=3,lvl=0,fmt=bullet,char='▪')) ▪ (font=Calibri Light, size=10pt)Cat mood improved by 100%
+(Normal, indent=0.6cm, before=4pt, numPr(id=3,lvl=0,fmt=bullet,char='▪')) ▪ (font=Calibri Light, size=10pt)Cat mood improved by 120%
+
+
+(Normal, align=center, before=18pt) (bold, underline, font=Calibri Light, size=10pt)Additional Experience
+
+(Normal, align=center, before=6pt) (bold, italic, font=Calibri Light, size=10pt)Software Engineer(bold, font=Calibri Light, size=10pt) | (bold, font=Calibri Light, size=10pt)Smalltech(bold, font=Calibri Light, size=10pt)| (bold, font=Calibri Light, size=10pt)Small (bold, font=Calibri Light, size=10pt)things
+
+(Normal, align=center, before=6pt) (bold, font=Calibri Light, size=10pt)Software Engineer | (bold, font=Calibri Light, size=10pt)Fintech(bold, font=Calibri Light, size=10pt) |(bold, font=Calibri Light, size=10pt) (bold, font=Calibri Light, size=10pt)Money
+
+(Normal, align=center, before=6pt) (bold, font=Calibri Light, size=10pt)Software Engineer | (bold, font=Calibri Light, size=10pt)Biotech(bold, font=Calibri Light, size=10pt)| (bold, font=Calibri Light, size=10pt)Microbes
+
+
+(List Paragraph, align=center, before=18pt, tabs=[center@3.75in, left@5.75in]) (bold, font=Raleway, size=11pt)Education 
+(Normal, align=center) (bold, font=Calibri Light, size=10pt)Master's Degree, Computer Science | (font=Calibri Light, size=10pt)University of (font=Calibri Light, size=10pt)Brain
+(Normal, align=center) (bold, font=Calibri Light, size=10pt)Bachelor's Degree, Computer Science | (font=Calibri Light, size=10pt)University of (font=Calibri Light, size=10pt)Brain
+
+
+(List Paragraph, align=center, before=18pt, tabs=[center@3.75in, left@5.75in]) (bold, font=Raleway, size=11pt)Credentials
+(Normal, align=center) (bold, font=Calibri Light, size=10pt)Master coffee roaster(bold, font=Calibri Light, size=10pt) | (font=Calibri Light, size=10pt)Coffe(font=Calibri Light, size=10pt)e(font=Calibri Light, size=10pt) chain
+(Normal, align=center) (bold, font=Calibri Light, size=10pt)Cat expert | (font=Calibri Light, size=10pt)Cat university

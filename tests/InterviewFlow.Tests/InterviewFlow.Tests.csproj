@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <!-- Test code favors readability over warning purity. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <!-- xunit v3: required by Avalonia.Headless.XUnit 12.x -->
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="6.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- ADR-001b mermaid spike only; not an app dependency (yet). -->
+    <PackageReference Include="Jint" Version="4.16.1" />
+    <!-- Same Svg.Skia the App's Avalonia control resolves — used to rasterize
+         produced diagrams and assert text is actually drawn. -->
+    <PackageReference Include="Svg.Skia" Version="5.2.2" />
+    <!-- Headless Avalonia: view-instantiation smoke tests catch XAML errors in
+         lazily-loaded page templates that a startup smoke can't reach. -->
+    <PackageReference Include="Avalonia.Headless.XUnit" Version="12.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\InterviewFlow.Core\InterviewFlow.Core.csproj" />
+    <ProjectReference Include="..\..\src\InterviewFlow.App\InterviewFlow.App.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Fixtures\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

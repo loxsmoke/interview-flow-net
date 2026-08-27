@@ -1,0 +1,116 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:pages="using:InterviewFlow.App.ViewModels.Pages"
+             xmlns:views="using:InterviewFlow.App.Views"
+             xmlns:controls="using:InterviewFlow.App.Controls"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="820"
+             x:Class="InterviewFlow.App.Views.CustomActionPageView"
+             x:DataType="pages:CustomActionPageViewModel">
+
+  <!-- Custom action screen (§3.9): view + edit modes. -->
+  <ScrollViewer MaxWidth="1100">
+    <StackPanel Spacing="12">
+
+      <!-- Header -->
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
+          <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsViewMode}">
+            <Button Classes="subtle" Content="Edit" Command="{Binding EditCommand}" />
+            <Button Classes="danger" Content="Delete" Command="{Binding DeleteCommand}" />
+            <views:AgentRunHeaderView DataContext="{Binding Run}" />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBlock Text="⚡" FontSize="20" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}" />
+            <controls:CostBadge CostUsd="{Binding CostUsd}" Detail="{Binding CostDetail}"
+                                IsVisible="{Binding IsViewMode}" />
+          </StackPanel>
+          <TextBlock Text="{Binding Description}" FontSize="13"
+                     Foreground="{StaticResource TextMutedBrush}" Margin="0,4,0,0"
+                     IsVisible="{Binding IsViewMode}" />
+        </StackPanel>
+      </DockPanel>
+
+      <!-- Edit mode -->
+      <StackPanel Spacing="10" IsVisible="{Binding IsEditing}">
+        <TextBlock Text="{Binding ValidationError}" FontSize="12" Foreground="#F87171"
+                   IsVisible="{Binding ValidationError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        <StackPanel Spacing="4">
+          <TextBlock Text="Name" FontSize="12" Foreground="{StaticResource TextMutedBrush}" />
+          <TextBox Classes="field" Text="{Binding Name}" Watermark="What question to ask" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="Description" FontSize="12" Foreground="{StaticResource TextMutedBrush}" />
+          <TextBox Classes="field" Text="{Binding Description}" Watermark="Shown in the sidebar tooltip" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="Temperature (0–2, empty = API default)" FontSize="12"
+                     Foreground="{StaticResource TextMutedBrush}" />
+          <TextBox Classes="field" Text="{Binding TemperatureText}" Watermark="default" MaxWidth="160"
+                   HorizontalAlignment="Left" />
+          <TextBlock FontSize="11" Foreground="#64748B"
+                     Text="0–0.3 precise · 0.4–0.7 balanced · 0.8–1.2 creative · 1.3–2 experimental" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+          <DockPanel>
+            <ComboBox DockPanel.Dock="Right" PlaceholderText="Insert tag…" MinWidth="180" FontSize="12"
+                      ItemsSource="{Binding KnownTags}" SelectionChanged="OnInsertTagSelected" x:Name="TagCombo" />
+            <TextBlock Text="Prompt template" FontSize="12" Foreground="{StaticResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+          </DockPanel>
+          <TextBox Classes="field" Text="{Binding PromptTemplate}" AcceptsReturn="True" TextWrapping="Wrap"
+                   MinHeight="220" VerticalContentAlignment="Top"
+                   FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12"
+                   Watermark="Company: {{company_name}}&#x0a;Position: {{position}}&#x0a;…" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Classes="primary" Content="Save" Command="{Binding SaveCommand}" />
+          <Button Classes="subtle" Content="Cancel" Command="{Binding CancelEditCommand}" />
+        </StackPanel>
+      </StackPanel>
+
+      <!-- View mode -->
+      <StackPanel Spacing="12" IsVisible="{Binding IsViewMode}">
+        <StackPanel IsVisible="{Binding Run.IsRunningHere}" Spacing="8">
+          <ProgressBar IsIndeterminate="True" Height="4"
+                       Foreground="{StaticResource PrimaryGradientBrush}" Background="#1E293B" />
+          <controls:LiveTracePanel DataContext="{Binding Run.Trace}" />
+        </StackPanel>
+
+        <Border IsVisible="{Binding Run.HasError}"
+                Background="#431407" BorderBrush="#9A3412" BorderThickness="1" CornerRadius="8" Padding="16">
+          <TextBlock Text="{Binding Run.ErrorMessage}" FontSize="13" TextWrapping="Wrap"
+                     Foreground="{StaticResource SearchWarningTextBrush}" />
+        </Border>
+
+        <StackPanel Spacing="12" IsVisible="{Binding Run.ShowResult}">
+          <Expander Header="Prompt template" IsExpanded="False"
+                    Background="{StaticResource PanelBackgroundBrush}"
+                    BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1" CornerRadius="8"
+                    HorizontalAlignment="Stretch">
+            <SelectableTextBlock Text="{Binding PromptTemplate}" FontSize="12" TextWrapping="Wrap"
+                                 FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                                 Foreground="{StaticResource TextMutedBrush}" Margin="8" />
+          </Expander>
+          <Border Background="{StaticResource PanelBackgroundBrush}"
+                  BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
+                  CornerRadius="12" Padding="24" MinHeight="200">
+            <Grid>
+              <controls:MarkdownView Markdown="{Binding Result}"
+                                     IsVisible="{Binding Result, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+              <TextBlock Text="No result yet — hit Run AI."
+                         IsVisible="{Binding Result, Converter={x:Static StringConverters.IsNullOrEmpty}}"
+                         FontSize="13" Foreground="#64748B"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

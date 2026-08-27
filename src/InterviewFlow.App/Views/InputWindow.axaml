@@ -1,0 +1,24 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="InterviewFlow.App.Views.InputWindow"
+        Width="420" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent">
+  <!-- Single-field input modal (save-to-library description etc.). -->
+  <Border Background="{StaticResource PanelBackgroundBrush}"
+          BorderBrush="{StaticResource PanelBorderBrush}"
+          BorderThickness="1" CornerRadius="16" Padding="24" Margin="8">
+    <StackPanel Spacing="12">
+      <TextBlock x:Name="TitleText" FontSize="17" FontWeight="SemiBold"
+                 Foreground="{StaticResource TextPrimaryBrush}" />
+      <TextBox x:Name="ValueBox" Classes="field" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+        <Button Classes="subtle" Content="Cancel" Click="OnCancel" />
+        <Button Classes="primary" Content="Save" Click="OnSubmit" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</Window>

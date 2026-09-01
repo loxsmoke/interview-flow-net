@@ -431,3 +431,11 @@ FodyWeavers.xsd
 # macOS bundle output (tools/publish-macos.sh)
 dist/
 artifacts/
+
+# Interview Flow user data and configuration (personal — never commit)
+/data/*
+!/data/.gitkeep
+!/data/README.md
+!/data/Resume-Template.docx
+.env
+*.bak

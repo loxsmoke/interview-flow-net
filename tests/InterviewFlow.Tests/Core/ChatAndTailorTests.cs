@@ -7,7 +7,9 @@ namespace InterviewFlow.Tests.Core;
 
 public sealed class TailoredResumeTests
 {
-    private const string Analysis = """
+    // ReplaceLineEndings: a raw string literal carries the source file's line
+    // endings, which depend on git's autocrlf at checkout.
+    private static readonly string Analysis = """
         ## 1. Fit Analysis
         Some prose.
 
@@ -17,7 +19,7 @@ public sealed class TailoredResumeTests
 
         ## A note on the changes
         I removed two bullets.
-        """;
+        """.ReplaceLineEndings("\n");
 
     [Fact]
     public void Extracts_section_six_and_strips_trailing_note()

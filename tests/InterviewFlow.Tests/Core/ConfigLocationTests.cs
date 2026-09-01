@@ -108,7 +108,9 @@ public sealed class ConfigLocationTests : IDisposable
         Directory.CreateDirectory(data);
         Environment.CurrentDirectory = _dir;
 
-        Assert.Equal(data, Paths.DataDir(""));
+        // Read the cwd back rather than using _dir: on macOS the temp dir lives
+        // behind the /var -> /private/var symlink, which setting the cwd resolves.
+        Assert.Equal(Path.Combine(Environment.CurrentDirectory, "data"), Paths.DataDir(""));
     }
 
     [Fact]

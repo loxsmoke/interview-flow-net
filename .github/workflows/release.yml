@@ -1,0 +1,295 @@
+name: Release
+
+# Manually triggered. Computes the next version from version.win (dry run),
+# stamps it into the app, builds trimmed self-contained packages for Windows
+# and macOS, and only after every build succeeds reserves the version on
+# version.win, commits and tags the bump, and publishes a GitHub Release with
+# the archives attached. The dry run is what keeps a failed build from burning
+# a version number.
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: increment settings (semantic.3) 1.0.0=azz 0.1.0=az 0.0.1=a
+        required: true
+        default: az
+        type: string
+      postfix:
+        description: postfix like rc or beta for a pre-release version (also marks the release as pre-release)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  # ── 1. What version will this be? ────────────────────────────────────────
+  # Separate job so both build matrix legs stamp the same number.
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      project: ${{ steps.version.outputs.project }}
+      assembly: ${{ steps.version.outputs.assembly }}
+    steps:
+      - name: Require a branch run
+        if: ${{ github.ref_type != 'branch' }}
+        run: |
+          echo "::error::Run this workflow from the branch that should receive the version commit" >&2
+          exit 1
+
+      - name: Compute version from version.win (dry run)
+        id: version
+        env:
+          INCREMENT: ${{ inputs.increment }}
+          POSTFIX: ${{ inputs.postfix }}
+          VERSION_WIN_API_KEY: ${{ secrets.VERSION_WIN_API_KEY }}
+          VERSION_WIN_PROJECT_ID: ${{ secrets.VERSION_WIN_PROJECT_ID }}
+        run: |
+          # /dryrun computes the next version without consuming it.
+          VERSION_URL="https://api.version.win/v/${VERSION_WIN_PROJECT_ID}/dryrun?key=${VERSION_WIN_API_KEY}&increment=${INCREMENT}"
+
+          if [ -n "$POSTFIX" ]; then
+            VERSION_URL="${VERSION_URL}&postfix=${POSTFIX}"
+          fi
+
+          if ! VERSION=$(curl -sf "$VERSION_URL"); then
+            echo "::error::Failed to fetch version from version.win" >&2
+            exit 1
+          fi
+
+          # Strip any pre-release postfix (e.g. -rc1) for the numeric assembly version.
+          BASE_VERSION="${VERSION%%-*}"
+          if [[ "$BASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            ASSEMBLY_VERSION="${BASE_VERSION}.0"
+          elif [[ "$BASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            ASSEMBLY_VERSION="$BASE_VERSION"
+          else
+            echo "::error::Version '$VERSION' does not start with a three-part or four-part numeric version" >&2
+            exit 1
+          fi
+
+          echo "project=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "assembly=$ASSEMBLY_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Project version: $VERSION"
+          echo "Assembly and file version: $ASSEMBLY_VERSION"
+
+  # ── 2. Build every platform ──────────────────────────────────────────────
+  # macOS legs need a Mac for codesign; the Windows package comes off a
+  # Windows runner. fail-fast keeps a broken leg from reserving a version.
+  build:
+    needs: version
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-arm64
+          # Cross-built on the arm64 runner: dotnet publishes osx-x64 fine and
+          # codesign signs either slice, so this does not depend on an Intel
+          # runner image staying available.
+          - os: macos-latest
+            rid: osx-x64
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      VERSION: ${{ needs.version.outputs.project }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      # Ships in the package so mermaid code blocks render as diagrams rather
+      # than falling back to plain code (docs/10-building.md).
+      - name: Fetch mermaid bundle
+        shell: bash
+        run: bash tools/get-mermaid.sh
+
+      - name: Install dotnet-property
+        run: dotnet tool install --global dotnet-property
+
+      - name: Apply project version
+        shell: bash
+        env:
+          ASSEMBLY_VERSION: ${{ needs.version.outputs.assembly }}
+        run: |
+          # dotnet-property matches a relative glob, so run it from the
+          # project's own directory with a bare filename.
+          ( cd src/InterviewFlow.App && \
+            dotnet-property InterviewFlow.App.csproj "Version:$VERSION" && \
+            dotnet-property InterviewFlow.App.csproj "AssemblyVersion:$ASSEMBLY_VERSION" && \
+            dotnet-property InterviewFlow.App.csproj "FileVersion:$ASSEMBLY_VERSION" )
+
+      - name: Test
+        run: dotnet test InterviewFlow.slnx --configuration Release --verbosity normal
+
+      # macOS: the repo's own script assembles + ad-hoc signs the .app bundle.
+      # It reads <Version> from the csproj, which the stamp step just set.
+      - name: Publish macOS bundle
+        if: runner.os == 'macOS'
+        run: bash tools/publish-macos.sh ${{ matrix.rid }}
+
+      # ditto, not zip: it preserves the bundle's symlinks, permissions and the
+      # ad-hoc signature. A plain zip produces a bundle Gatekeeper rejects.
+      - name: Package macOS archive
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p artifacts
+          ditto -c -k --keepParent "dist/Interview Flow.app" \
+            "artifacts/InterviewFlow-${VERSION}-${{ matrix.rid }}.zip"
+
+      # Trimming settings (TrimMode=partial) and the reasoning behind them
+      # live in Directory.Build.props, keyed off PublishTrimmed.
+      - name: Publish Windows
+        if: runner.os == 'Windows'
+        run: >
+          dotnet publish src/InterviewFlow.App/InterviewFlow.App.csproj
+          --configuration Release
+          --runtime ${{ matrix.rid }}
+          --self-contained true
+          -p:PublishTrimmed=true
+          --output publish/${{ matrix.rid }}
+
+      - name: Stage mermaid bundle
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p "publish/${{ matrix.rid }}/Assets"
+          cp spikes/assets/mermaid.min.js "publish/${{ matrix.rid }}/Assets/mermaid.min.js"
+
+      - name: Strip debug symbols
+        if: runner.os == 'Windows'
+        shell: bash
+        run: find "publish/${{ matrix.rid }}" -name '*.pdb' -delete
+
+      - name: Package Windows portable zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          Compress-Archive -Path "publish/${{ matrix.rid }}/*" `
+            -DestinationPath "artifacts/InterviewFlow-${env:VERSION}-${{ matrix.rid }}-portable.zip"
+
+      # A trimmed build can compile clean and still fail at startup when the
+      # trimmer removes something XAML or a provider reaches for reflectively.
+      # Launch it once and require it to still be alive a few seconds later.
+      - name: Smoke test the package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = "publish/${{ matrix.rid }}/InterviewFlow.App.exe"
+          $proc = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 15
+          if ($proc.HasExited) {
+            Write-Error "::error::Trimmed build exited with code $($proc.ExitCode) instead of staying up"
+            exit 1
+          }
+          Stop-Process -Id $proc.Id -Force
+          Write-Host "Trimmed build started and stayed up."
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-${{ matrix.rid }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  # ── 3. Every build passed: take the version and publish ──────────────────
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.project }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      # Only now consume the number on version.win — the builds are green.
+      - name: Reserve version on version.win
+        env:
+          INCREMENT: ${{ inputs.increment }}
+          POSTFIX: ${{ inputs.postfix }}
+          VERSION_WIN_API_KEY: ${{ secrets.VERSION_WIN_API_KEY }}
+          VERSION_WIN_PROJECT_ID: ${{ secrets.VERSION_WIN_PROJECT_ID }}
+        run: |
+          VERSION_URL="https://api.version.win/v/${VERSION_WIN_PROJECT_ID}/new?key=${VERSION_WIN_API_KEY}&increment=${INCREMENT}"
+
+          if [ -n "$POSTFIX" ]; then
+            VERSION_URL="${VERSION_URL}&postfix=${POSTFIX}"
+          fi
+
+          if ! RESERVED=$(curl -sf "$VERSION_URL"); then
+            echo "::error::Failed to reserve version on version.win" >&2
+            exit 1
+          fi
+
+          # Guard against a concurrent release taking the number between the dry
+          # run and now — the packages were already stamped with $VERSION.
+          if [ "$RESERVED" != "$VERSION" ]; then
+            echo "::error::version.win issued '$RESERVED' but the build used '$VERSION' (concurrent release?)" >&2
+            exit 1
+          fi
+          echo "Reserved version $RESERVED"
+
+      - name: Commit and tag version
+        env:
+          ASSEMBLY_VERSION: ${{ needs.version.outputs.assembly }}
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          TAG="v$VERSION"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null; then
+            echo "::error::Tag '$TAG' already exists on origin" >&2
+            exit 1
+          fi
+
+          # The build runners stamped their own checkouts; redo it here so the
+          # commit carries the same numbers.
+          dotnet tool install --global dotnet-property
+          ( cd src/InterviewFlow.App && \
+            dotnet-property InterviewFlow.App.csproj "Version:$VERSION" && \
+            dotnet-property InterviewFlow.App.csproj "AssemblyVersion:$ASSEMBLY_VERSION" && \
+            dotnet-property InterviewFlow.App.csproj "FileVersion:$ASSEMBLY_VERSION" )
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/InterviewFlow.App/InterviewFlow.App.csproj
+
+          if git diff --cached --quiet; then
+            echo "::error::Version update did not change the project file" >&2
+            exit 1
+          fi
+
+          git commit -m "Set version $VERSION"
+          git tag "$TAG"
+          git push --atomic origin "HEAD:$TARGET_BRANCH" "refs/tags/$TAG"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: v${{ needs.version.outputs.project }}
+          name: Interview Flow v${{ needs.version.outputs.project }}
+          prerelease: ${{ inputs.postfix != '' }}
+          generate_release_notes: true
+          body: |
+            Self-contained builds — no .NET runtime needed on the target machine.
+
+            The macOS bundles are **ad-hoc signed, not notarized**: on first
+            launch right-click the app and choose **Open** once.
+          files: artifacts/*

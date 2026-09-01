@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace InterviewFlow.App.Platform;
@@ -26,6 +26,30 @@ public static class ShellOpen
         catch
         {
             // No browser / blocked — ignore, matching the original.
+        }
+    }
+
+    /// <summary>
+    /// Open a directory in Explorer / Finder / the desktop's file manager.
+    /// Distinct from <see cref="RevealInFileManager"/>, which selects a file
+    /// inside its parent; this shows the folder's own contents.
+    /// </summary>
+    public static void OpenFolder(string path)
+    {
+        if (path.Length == 0 || !Directory.Exists(path))
+            return;
+        try
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                Process.Start("open", path);
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                Process.Start("explorer.exe", $"\"{path}\"");
+            else
+                Process.Start("xdg-open", path);
+        }
+        catch
+        {
+            // No file manager / blocked — ignore, matching OpenUrl.
         }
     }
 

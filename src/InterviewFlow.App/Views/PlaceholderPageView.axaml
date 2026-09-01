@@ -7,7 +7,7 @@
              x:Class="InterviewFlow.App.Views.PlaceholderPageView"
              x:DataType="pages:PlaceholderPageViewModel">
 
-  <StackPanel MaxWidth="672" HorizontalAlignment="Left" Spacing="8">
+  <StackPanel Spacing="8">
     <StackPanel Orientation="Horizontal" Spacing="12">
       <TextBlock Text="{Binding Icon}" FontSize="24" VerticalAlignment="Center" />
       <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Bold"

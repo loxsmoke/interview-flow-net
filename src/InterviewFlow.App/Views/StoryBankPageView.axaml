@@ -10,7 +10,7 @@
              x:DataType="pages:StoryBankPageViewModel">
 
   <!-- Story Bank (§3.5): collapsible STAR cards. -->
-  <Grid RowDefinitions="Auto,Auto,*" MaxWidth="1100">
+  <Grid RowDefinitions="Auto,Auto,*">
     <DockPanel Grid.Row="0" Margin="0,0,0,12">
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">
         <views:AgentRunHeaderView DataContext="{Binding Run}" />

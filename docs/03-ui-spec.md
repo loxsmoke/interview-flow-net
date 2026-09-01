@@ -114,7 +114,7 @@ Version, 11-row icon/label/description feature list, GitHub link (styled `text-i
   - Gemini: model list fetched live from the API.
   - Ollama: base URL field · "Fetch locally available models" dropdown annotating tool support (`· tools ✓`) + yellow warning when the chosen model lacks tools · `num_ctx` slider with 8 stops (`Default, 4k, 8k, 16k, 32k, 64k, 128k, 256k` → `'', 4096 … 262144`).
 - **Resume Info**: Full name, Contact info.
-- **Data Storage**: current path + Default / Browse… / Save; file list with sizes. Changing the folder opens the **MigrationModal** — 5-phase wizard: confirm → copy → verify (byte-for-byte) → save config → delete originals, with distinct error states and retry paths (see 08).
+- **Data Storage**: current path + **📂 Open folder** / Default / Browse… / Save; file list with sizes. Open folder opens the *active* data directory (not the pending edit in the textbox) in Explorer / Finder / `xdg-open`, and is disabled when that directory doesn't exist. The list covers the JSON stores **and** `resume-template.docx`, which is data too — it also moves with the folder on a migration. Changing the folder opens the **MigrationModal** — 5-phase wizard: confirm → copy → verify (byte-for-byte) → save config → delete originals, with distinct error states and retry paths (see 08).
 
 ## 3.12 Dialog inventory
 

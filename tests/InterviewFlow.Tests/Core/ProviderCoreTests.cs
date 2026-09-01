@@ -1,4 +1,4 @@
-using InterviewFlow.Core.Agents;
+﻿using InterviewFlow.Core.Agents;
 using InterviewFlow.Core.Config;
 using InterviewFlow.Core.Prompts;
 using InterviewFlow.Core.Providers;
@@ -10,11 +10,15 @@ public sealed class PricingTests
     [Fact]
     public void Known_models_use_their_table_rows()
     {
+        Assert.Equal(2.0 + 10.0, Pricing.AnthropicCost("claude-sonnet-5", 1_000_000, 1_000_000));
+        Assert.Equal(5.0 + 25.0, Pricing.AnthropicCost("claude-opus-5", 1_000_000, 1_000_000));
         Assert.Equal(3.0 + 15.0, Pricing.AnthropicCost("claude-sonnet-4-6", 1_000_000, 1_000_000));
-        Assert.Equal(15.0 + 75.0, Pricing.AnthropicCost("claude-opus-4-7", 1_000_000, 1_000_000));
+        Assert.Equal(1.0 + 5.0, Pricing.AnthropicCost("claude-haiku-4-5", 1_000_000, 1_000_000));
+        Assert.Equal(4.0 + 20.0, Pricing.OpenAiCost("gpt-5.6-sol", 1_000_000, 1_000_000));
+        Assert.Equal(2.0 + 12.0, Pricing.OpenAiCost("gpt-5.6-terra", 1_000_000, 1_000_000));
         Assert.Equal(2.50 + 10.0, Pricing.OpenAiCost("gpt-4o", 1_000_000, 1_000_000));
         Assert.Equal(5.0 + 30.0, Pricing.OpenAiCost("gpt-5.5", 1_000_000, 1_000_000));
-        Assert.Equal(0.15 + 0.60, Pricing.GeminiCost("gemini-2.5-flash", 1_000_000, 1_000_000));
+        Assert.Equal(0.75 + 3.75, Pricing.GeminiCost("gemini-3.6-flash", 1_000_000, 1_000_000));
     }
 
     [Fact]

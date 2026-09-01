@@ -1,4 +1,4 @@
-namespace InterviewFlow.Core.State;
+﻿namespace InterviewFlow.Core.State;
 
 /// <summary>The five phases of the data-folder move (docs/08 §8.5).</summary>
 public enum MigrationPhase
@@ -26,13 +26,23 @@ public static class DataMigration
     {
         if (!Directory.Exists(dir))
             return [];
-        return Directory.EnumerateFiles(dir, "*.json")
+        return Directory.EnumerateFiles(dir)
             .Select(Path.GetFileName)
-            .Where(n => n is not null)
+            .Where(n => n is not null && IsDataFile(n))
             .Select(n => n!)
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToList();
     }
+
+    /// <summary>
+    /// The state/action stores are JSON; the .docx resume template lives in the
+    /// same folder and is just as much the user's data (docs/02 §2.6), so it is
+    /// listed in Settings and carried along by a folder move — leaving it behind
+    /// would silently strip the styling from every later export.
+    /// </summary>
+    private static bool IsDataFile(string name) =>
+        name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+        || name.Equals(ResumePipeline.DocxExporter.TemplateFileName, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>True when both paths resolve to the same directory.</summary>
     public static bool IsSameDirectory(string a, string b)

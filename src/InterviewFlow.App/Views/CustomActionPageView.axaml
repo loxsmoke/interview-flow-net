@@ -10,7 +10,7 @@
              x:DataType="pages:CustomActionPageViewModel">
 
   <!-- Custom action screen (§3.9): view + edit modes. -->
-  <ScrollViewer MaxWidth="1100">
+  <ScrollViewer>
     <StackPanel Spacing="12">
 
       <!-- Header -->

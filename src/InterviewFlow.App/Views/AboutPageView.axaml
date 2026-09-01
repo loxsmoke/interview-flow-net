@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -8,7 +8,7 @@
              x:DataType="pages:AboutPageViewModel">
 
   <!-- About page — content mirrors the original AboutStep (§3.10). -->
-  <ScrollViewer MaxWidth="672" HorizontalAlignment="Left">
+  <ScrollViewer>
     <StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,0,0,4">
         <TextBlock Text="Interview Flow" FontSize="24" FontWeight="Bold"
@@ -42,8 +42,9 @@
         <TextBlock Text="Open source at" FontSize="13" Foreground="{StaticResource TextMutedBrush}"
                    VerticalAlignment="Center" />
         <Button Background="Transparent" Padding="0" Cursor="Hand"
-                Command="{Binding OpenGitHubCommand}">
-          <TextBlock Text="loxsmoke/interview-flow" FontSize="13"
+                Command="{Binding OpenGitHubCommand}"
+                ToolTip.Tip="{Binding GitHubUrl}">
+          <TextBlock Text="{Binding GitHubLabel}" FontSize="13"
                      Foreground="#A5B4FC" TextDecorations="Underline" />
         </Button>
       </StackPanel>

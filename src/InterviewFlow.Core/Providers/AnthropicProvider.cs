@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -68,6 +68,24 @@ public sealed class AnthropicProvider(string apiKey, HttpClient? http = null)
         }
     }
 
+
+    /// <summary>
+    /// Models that still accept `temperature`. Opus 4.7+, Opus 4.8, Opus 5,
+    /// Sonnet 5, and Fable 5 removed the sampling parameters and reject the
+    /// field outright; Opus 4.6, Sonnet 4.6, Haiku 4.5 and older accept it.
+    /// Unknown ids are assumed new — omitting temperature costs a little
+    /// determinism, sending it to a model that refuses it costs the whole run.
+    /// </summary>
+    internal static bool AcceptsTemperature(string model)
+    {
+        var id = model.Trim().ToLowerInvariant();
+        return id.StartsWith("claude-sonnet-4-", StringComparison.Ordinal)
+            || id.StartsWith("claude-haiku-", StringComparison.Ordinal)
+            || id.StartsWith("claude-opus-4-6", StringComparison.Ordinal)
+            || id.StartsWith("claude-opus-4-5", StringComparison.Ordinal)
+            || id.StartsWith("claude-3", StringComparison.Ordinal);
+    }
+
     private async IAsyncEnumerable<AgentEvent> StreamOnceAsync(
         string prompt, string system, string model, double? temperature, bool useWeb,
         [EnumeratorCancellation] CancellationToken ct)
@@ -83,7 +101,9 @@ public sealed class AnthropicProvider(string apiKey, HttpClient? http = null)
                 ["content"] = prompt,
             }),
         };
-        if (temperature is not null)
+        // Claude 4.7 and later removed the sampling parameters: sending
+        // temperature to them is a 400, not a no-op (docs/05 §5.9).
+        if (temperature is not null && AcceptsTemperature(model))
             body["temperature"] = temperature.Value;
         if (system.Length > 0)
             body["system"] = system;

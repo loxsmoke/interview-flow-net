@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using InterviewFlow.Core.Providers;
@@ -91,7 +91,9 @@ public sealed partial class ConfigPageViewModel : ObservableObject
 
     // ── Data storage ─────────────────────────────────────────────────────────
 
-    [ObservableProperty] private string _dataDir = "";
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OpenDataFolderCommand))]
+    private string _dataDir = "";
     [ObservableProperty] private string _pendingDataDir = "";
 
     public ObservableCollection<DataFileRow> DataFiles { get; } = [];
@@ -103,21 +105,27 @@ public sealed partial class ConfigPageViewModel : ObservableObject
 
     public IReadOnlyList<ModelOption> AnthropicModels { get; } =
     [
-        new("claude-sonnet-4-6", "Claude Sonnet 4.6", "Balanced, recommended"),
-        new("claude-opus-4-7", "Claude Opus 4.7", "Most capable"),
-        new("claude-haiku-4-5-20251001", "Claude Haiku 4.5", "Fast & affordable"),
+        new("claude-opus-5", "Claude Opus 5", "Most capable"),
+        new("claude-opus-4-8", "Claude Opus 4.8", "Previous Opus"),
+        new("claude-opus-4-7", "Claude Opus 4.7", "Previous Opus"),
+        new("claude-sonnet-5", "Claude Sonnet 5", "Balanced, recommended"),
+        new("claude-sonnet-4-6", "Claude Sonnet 4.6", "Previous balanced"),
+        new("claude-haiku-4-5", "Claude Haiku 4.5", "Fast & affordable"),
     ];
 
     public IReadOnlyList<ModelOption> OpenAiModels { get; } =
     [
-        new("gpt-5.5", "GPT-5.5", "Flagship · 1M ctx"),
+        new("gpt-5.6-sol", "GPT-5.6 Sol", "Flagship"),
+        new("gpt-5.5", "GPT-5.5", "Previous flagship"),
+        new("gpt-5.6-terra", "GPT-5.6 Terra", "Balanced, recommended"),
         new("gpt-5.4", "GPT-5.4", "Coding & agentic"),
-        new("gpt-5.4-mini", "GPT-5.4 mini", "Fast & affordable"),
         new("gpt-5", "GPT-5", "GPT-5 base"),
+        new("gpt-5.4-mini", "GPT-5.4 mini", "Fast & affordable"),
+        new("gpt-5.6-luna", "GPT-5.6 Luna", "Cost-optimized"),
         new("gpt-4.1", "GPT-4.1", "Latest GPT-4"),
         new("gpt-4o", "GPT-4o", "Multimodal · web search"),
-        new("gpt-4o-mini", "GPT-4o mini", "Affordable"),
         new("gpt-4.1-mini", "GPT-4.1 mini", "Affordable"),
+        new("gpt-4o-mini", "GPT-4o mini", "Affordable"),
     ];
 
     public ObservableCollection<ModelOption> GeminiModels { get; } = [];
@@ -307,10 +315,12 @@ public sealed partial class ConfigPageViewModel : ObservableObject
     private void RefreshDataFiles()
     {
         DataFiles.Clear();
-        foreach (var name in DataMigration.ListDataFiles(DataDir).Take(5))
+        foreach (var name in DataMigration.ListDataFiles(DataDir).Take(8))
         {
             var note = name == StateStore.DataFileName ? "sessions"
                 : name == CustomActionStore.FileName ? "custom actions"
+                : name.Equals(Core.ResumePipeline.DocxExporter.TemplateFileName,
+                    StringComparison.OrdinalIgnoreCase) ? "resume export template"
                 : "";
             long size = 0;
             try
@@ -325,6 +335,15 @@ public sealed partial class ConfigPageViewModel : ObservableObject
             DataFiles.Add(new DataFileRow(name, note, size));
         }
     }
+
+    /// <summary>
+    /// Opens the folder the app is actually reading — <see cref="DataDir"/>,
+    /// not the pending edit in the textbox, which may not exist yet.
+    /// </summary>
+    public bool CanOpenDataFolder => DataDir.Length > 0 && Directory.Exists(DataDir);
+
+    [RelayCommand(CanExecute = nameof(CanOpenDataFolder))]
+    private void OpenDataFolder() => Platform.ShellOpen.OpenFolder(DataDir);
 
     [RelayCommand]
     private void UseDefaultDataDir() => PendingDataDir = DefaultDataDir;

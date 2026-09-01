@@ -13,7 +13,7 @@
     <pages:SetupPageViewModel />
   </Design.DataContext>
 
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" MaxWidth="1100" HorizontalAlignment="Stretch">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
     <!-- Header: title + provider chip, right-aligned Save & Continue (§3.2) -->
     <DockPanel Grid.Row="0" Margin="0,0,0,16">

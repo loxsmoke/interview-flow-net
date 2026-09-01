@@ -249,3 +249,58 @@ public sealed class RouterTests
         Directory.Delete(dir, recursive: true);
     }
 }
+
+/// <summary>
+/// Model-surface rules (docs/05 §5.9). Claude 4.7 and later removed the
+/// sampling parameters — sending `temperature` to one is a 400, so the request
+/// builder has to drop it rather than clamp it.
+/// </summary>
+public sealed class AnthropicSamplingTests
+{
+    [Theory]
+    [InlineData("claude-opus-5", false)]
+    [InlineData("claude-opus-4-8", false)]
+    [InlineData("claude-opus-4-7", false)]
+    [InlineData("claude-sonnet-5", false)]
+    [InlineData("claude-fable-5", false)]
+    [InlineData("claude-sonnet-4-6", true)]
+    [InlineData("claude-opus-4-6", true)]
+    [InlineData("claude-haiku-4-5", true)]
+    [InlineData("claude-haiku-4-5-20251001", true)]
+    // An id we've never seen is assumed to follow the newer surface.
+    [InlineData("claude-opus-6", false)]
+    public void Only_pre_4_7_models_accept_temperature(string model, bool accepts) =>
+        Assert.Equal(accepts, AnthropicProvider.AcceptsTemperature(model));
+
+    [Fact]
+    public async Task Temperature_is_omitted_for_models_that_reject_it()
+    {
+        var handler = new FakeHandler();
+        handler.Enqueue(HttpStatusCode.OK,
+            "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"hi\"}}\n\n");
+
+        await foreach (var _ in new AnthropicProvider("sk-test", new HttpClient(handler))
+            .StreamAsync("prompt", "system", "claude-opus-5", 0.7, useWeb: false,
+                TestContext.Current.CancellationToken))
+        {
+        }
+
+        Assert.DoesNotContain("temperature", handler.Requests[0].Body);
+    }
+
+    [Fact]
+    public async Task Temperature_is_still_sent_to_models_that_take_it()
+    {
+        var handler = new FakeHandler();
+        handler.Enqueue(HttpStatusCode.OK,
+            "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"hi\"}}\n\n");
+
+        await foreach (var _ in new AnthropicProvider("sk-test", new HttpClient(handler))
+            .StreamAsync("prompt", "system", "claude-sonnet-4-6", 0.7, useWeb: false,
+                TestContext.Current.CancellationToken))
+        {
+        }
+
+        Assert.Contains("\"temperature\":0.7", handler.Requests[0].Body);
+    }
+}

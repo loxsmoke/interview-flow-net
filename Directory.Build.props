@@ -1,9 +1,32 @@
-<Project>
+﻿<Project>
   <PropertyGroup>
     <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Core treats warnings as errors; the App (XAML/generated code) and Tests opt out locally. -->
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!--
+    Release packaging trims the managed assemblies (the release workflow and
+    tools/publish-macos.sh pass -p:PublishTrimmed=true). TrimMode is
+    deliberately `partial`: it trims the BCL and Avalonia but leaves our
+    assemblies and Jint alone, because the trimmer cannot see through two
+    reflection paths — StateJson's JsonSerializer.Serialize(object, Type) over
+    the whole state model, and MermaidRenderer's Delegate.CreateDelegate
+    interop. Under full trim those break at runtime, silently, not at build.
+
+    Measured on win-x64: 237 MB untrimmed, 177 MB partial, 176 MB full. Full
+    buys ~1 MB because the bulk is native (Skia, HarfBuzz, ICU, coreclr), so
+    there is nothing to gain by taking that risk.
+
+    The suppression only hides analysis warnings about code that partial mode
+    does not trim (Core builds with TreatWarningsAsErrors, so they would
+    otherwise fail the publish). Re-check every one of them if TrimMode ever
+    changes.
+  -->
+  <PropertyGroup Condition="'$(PublishTrimmed)' == 'true'">
+    <TrimMode>partial</TrimMode>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
   </PropertyGroup>
 </Project>

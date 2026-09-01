@@ -1,4 +1,4 @@
-using InterviewFlow.Core.Config;
+﻿using InterviewFlow.Core.Config;
 
 namespace InterviewFlow.Tests.Core;
 
@@ -104,7 +104,7 @@ public sealed class EnvFileTests : IDisposable
         Assert.Equal("ollama", config.ActiveProvider);
         Assert.Equal("llama3.3", config.OllamaModel);
         Assert.Equal("http://localhost:11434", config.OllamaBaseUrl); // default
-        Assert.Equal("claude-sonnet-4-6", config.AnthropicModel);     // default
+        Assert.Equal("claude-sonnet-5", config.AnthropicModel);       // default
         Assert.Equal("", config.ResumeName);
     }
 }

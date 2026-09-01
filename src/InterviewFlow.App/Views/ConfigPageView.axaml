@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -38,7 +38,7 @@
 
   <!-- Configuration (§3.11). -->
   <ScrollViewer>
-    <StackPanel MaxWidth="820" HorizontalAlignment="Left" Spacing="16">
+    <StackPanel Spacing="16">
       <StackPanel>
         <TextBlock Text="Configuration" FontSize="24" FontWeight="Bold"
                    Foreground="{StaticResource TextPrimaryBrush}" />
@@ -223,13 +223,16 @@
         <StackPanel Spacing="10">
           <StackPanel Spacing="4">
             <TextBlock Classes="fieldLabel" Text="Data folder" />
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
               <TextBox Grid.Column="0" Classes="field" Text="{Binding PendingDataDir}" FontSize="12" />
-              <Button Grid.Column="1" Classes="subtle" Margin="6,0,0,0" Content="Default"
+              <Button Grid.Column="1" Classes="subtle" Margin="6,0,0,0" Content="📂 Open folder"
+                      Command="{Binding OpenDataFolderCommand}"
+                      ToolTip.Tip="{Binding DataDir, StringFormat='Open {0} in the file browser'}" />
+              <Button Grid.Column="2" Classes="subtle" Margin="6,0,0,0" Content="Default"
                       Command="{Binding UseDefaultDataDirCommand}" />
-              <Button Grid.Column="2" Classes="subtle" Margin="6,0,0,0" Content="Browse…"
+              <Button Grid.Column="3" Classes="subtle" Margin="6,0,0,0" Content="Browse…"
                       Command="{Binding BrowseDataDirCommand}" />
-              <Button Grid.Column="3" Classes="primary" Margin="6,0,0,0" Padding="12,8" Content="Save"
+              <Button Grid.Column="4" Classes="primary" Margin="6,0,0,0" Padding="12,8" Content="Save"
                       Command="{Binding SaveDataDirCommand}" />
             </Grid>
           </StackPanel>

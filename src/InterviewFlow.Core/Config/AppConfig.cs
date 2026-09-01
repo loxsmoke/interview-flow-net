@@ -1,4 +1,4 @@
-namespace InterviewFlow.Core.Config;
+﻿namespace InterviewFlow.Core.Config;
 
 /// <summary>Outcome of importing an external .env over the active settings file.</summary>
 /// <param name="Ok">False leaves the existing settings untouched.</param>
@@ -197,11 +197,11 @@ public sealed class AppConfig(EnvFile env)
     public string ActiveProvider => Get("ACTIVE_PROVIDER");
 
     public string AnthropicApiKey => Get("ANTHROPIC_API_KEY");
-    public string AnthropicModel => Get("ANTHROPIC_MODEL", "claude-sonnet-4-6");
+    public string AnthropicModel => Get("ANTHROPIC_MODEL", "claude-sonnet-5");
     public string OpenAiApiKey => Get("OPENAI_API_KEY");
-    public string OpenAiModel => Get("OPENAI_MODEL", "gpt-4o");
+    public string OpenAiModel => Get("OPENAI_MODEL", "gpt-5.6-terra");
     public string GeminiApiKey => Get("GEMINI_API_KEY");
-    public string GeminiModel => Get("GEMINI_MODEL", "gemini-2.5-flash");
+    public string GeminiModel => Get("GEMINI_MODEL", "gemini-3.6-flash");
     public string OllamaBaseUrl => Get("OLLAMA_BASE_URL", "http://localhost:11434");
     public string OllamaModel => Get("OLLAMA_MODEL", "llama3.2");
     /// <summary>Empty = Ollama default context window.</summary>

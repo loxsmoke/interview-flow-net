@@ -145,6 +145,30 @@ Caveats to encode:
   display-only, not persisted — the data schema has no setup-section cost fields).*
 - Provider blocks (e.g. LinkedIn refusing fetchers) still fail → behavior 5.
 
+## 5.9 Model surface (verified 2026-08-31)
+
+Picker lists live in `ConfigPageViewModel`, ordered most → least capable;
+`AppConfig` defaults track each list's "recommended" entry.
+
+- **Anthropic**: Opus 5 · Opus 4.8 · Opus 4.7 · **Sonnet 5 (default)** · Sonnet 4.6 · Haiku 4.5.
+  Haiku moved to the bare `claude-haiku-4-5` id; the dated `…-20251001` form still
+  prices and runs, it just no longer appears in the dropdown.
+- **OpenAI**: GPT-5.6 Sol · 5.5 · **5.6 Terra (default)** · 5.4 · 5 · 5.4-mini ·
+  5.6 Luna · then the GPT-4 line.
+- **Gemini**: fetched live from the API; the default is `gemini-3.6-flash`.
+
+**Sampling parameters are gone on Claude 4.7 and later.** Opus 4.7/4.8/5, Sonnet 5
+and Fable 5 reject `temperature` with a 400 — it is not ignored. `AnthropicProvider.
+AcceptsTemperature` gates the field, and treats an unrecognised id as new (omitting
+temperature costs a little determinism; sending it to a model that refuses it costs
+the whole run). The per-section temperature map still applies to Sonnet 4.6, Opus
+4.6, Haiku 4.5 and older. This was already latent: Opus 4.7 shipped in the picker
+and would have 400'd on every run.
+
+Not modelled: Fable 5 (its `stop_reason: "refusal"` needs handling the provider
+doesn't have, and it requires 30-day retention), cached-input/batch rates, and
+Gemini 3.1 Pro's >200k-token price tier.
+
 ## 5.8 Observability (decided: OpenTelemetry)
 
 The original's optional Langfuse tracing is replaced with **OpenTelemetry**: one activity/span per agent query (attributes: provider, model, section, temperature, web-search flag, token counts, cost, duration, outcome), exported via OTLP when an endpoint is configured, no-op otherwise. Config: standard `OTEL_EXPORTER_OTLP_ENDPOINT` env conventions — *exact config surface TBD in implementation; keep it out of the Configuration UI for v1*. Langfuse `.env` keys are preserved by the config codec but ignored. The diagnostic log records per-query metadata (model, duration, cost) regardless.

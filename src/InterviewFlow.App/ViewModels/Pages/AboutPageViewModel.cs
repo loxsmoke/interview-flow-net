@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace InterviewFlow.App.ViewModels.Pages;
@@ -25,6 +25,17 @@ public sealed partial class AboutPageViewModel(string version) : ObservableObjec
         new("⚡", "Custom Actions", "User-defined AI steps with access to all application context via template tags"),
     ];
 
+    private const string GitHubPrefix = "https://github.com/";
+
+    /// <summary>
+    /// Repo behind the SOURCE link. The label is derived from it rather than
+    /// written out separately — the two had drifted, with the link pointing at
+    /// the Python original while the text named this port.
+    /// </summary>
+    public string GitHubUrl { get; } = GitHubPrefix + "loxsmoke/interview-flow-net";
+
+    public string GitHubLabel => GitHubUrl[GitHubPrefix.Length..];
+
     [RelayCommand]
-    private void OpenGitHub() => Platform.ShellOpen.OpenUrl("https://github.com/loxsmoke/interview-flow");
+    private void OpenGitHub() => Platform.ShellOpen.OpenUrl(GitHubUrl);
 }

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using InterviewFlow.Core.Agents;
 using InterviewFlow.Core.Config;
 using InterviewFlow.Core.State;
@@ -25,13 +25,46 @@ public sealed class DataMigrationTests : IDisposable
     }
 
     [Fact]
-    public void Lists_only_json_files_sorted()
+    public void Lists_data_files_sorted()
     {
         var (from, _) = MakeDirs(
             ("interview-flow-data.json", "{}"),
             ("custom-actions.json", "{}"),
             ("notes.txt", "ignore me"));
         Assert.Equal(["custom-actions.json", "interview-flow-data.json"], DataMigration.ListDataFiles(from));
+    }
+
+    /// <summary>
+    /// The .docx export template lives beside the JSON and counts as data: it
+    /// shows in Settings and moves with a folder change, or every later export
+    /// silently loses its styling.
+    /// </summary>
+    [Fact]
+    public void Lists_the_resume_template_alongside_the_json()
+    {
+        var (from, _) = MakeDirs(
+            ("interview-flow-data.json", "{}"),
+            ("resume-template.docx", "PK-ish"),
+            ("draft.docx", "some other document"),
+            ("notes.txt", "ignore me"));
+
+        Assert.Equal(["interview-flow-data.json", "resume-template.docx"], DataMigration.ListDataFiles(from));
+    }
+
+    [Fact]
+    public void The_template_moves_with_the_data_folder()
+    {
+        var (from, to) = MakeDirs(
+            ("interview-flow-data.json", "{}"),
+            ("resume-template.docx", "template bytes"));
+        var files = DataMigration.ListDataFiles(from);
+
+        Assert.True(DataMigration.Copy(from, to, files).Ok);
+        Assert.True(DataMigration.Verify(from, to, files).Ok);
+        Assert.True(DataMigration.DeleteOriginals(from, files).Ok);
+
+        Assert.Equal("template bytes", File.ReadAllText(Path.Combine(to, "resume-template.docx")));
+        Assert.False(File.Exists(Path.Combine(from, "resume-template.docx")));
     }
 
     [Fact]

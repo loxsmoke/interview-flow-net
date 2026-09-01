@@ -25,7 +25,7 @@
   </UserControl.Styles>
 
   <!-- Mock Interview (§3.6): setup tiles → chat. -->
-  <Grid RowDefinitions="Auto,*" MaxWidth="1100">
+  <Grid RowDefinitions="Auto,*">
 
     <DockPanel Grid.Row="0" Margin="0,0,0,16">
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top">

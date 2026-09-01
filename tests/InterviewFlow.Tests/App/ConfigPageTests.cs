@@ -1,4 +1,4 @@
-using Avalonia.Headless.XUnit;
+﻿using Avalonia.Headless.XUnit;
 using InterviewFlow.App.ViewModels;
 using InterviewFlow.App.ViewModels.Pages;
 using InterviewFlow.Core.Config;
@@ -98,9 +98,45 @@ public sealed class ConfigPageTests : IDisposable
     [Fact]
     public void Preselects_the_configured_model_in_the_dropdown()
     {
-        var vm = new ConfigPageViewModel(FreshShell("ANTHROPIC_MODEL=claude-haiku-4-5-20251001\n"));
+        var vm = new ConfigPageViewModel(FreshShell("ANTHROPIC_MODEL=claude-haiku-4-5\n"));
         Assert.NotNull(vm.SelectedAnthropicModel);
-        Assert.Equal("claude-haiku-4-5-20251001", vm.SelectedAnthropicModel!.Id);
+        Assert.Equal("claude-haiku-4-5", vm.SelectedAnthropicModel!.Id);
+    }
+
+    /// <summary>
+    /// A model id that predates the current list (here the dated Haiku 4.5 id,
+    /// dropped when the picker moved to the bare ids) leaves the dropdown
+    /// unselected but must not rewrite what the user configured.
+    /// </summary>
+    [Fact]
+    public void An_id_no_longer_listed_keeps_working()
+    {
+        var shell = FreshShell("ANTHROPIC_MODEL=claude-haiku-4-5-20251001\n");
+        var vm = new ConfigPageViewModel(shell);
+
+        Assert.Null(vm.SelectedAnthropicModel);
+        Assert.Equal("claude-haiku-4-5-20251001", vm.AnthropicModel);
+        Assert.Equal("claude-haiku-4-5-20251001", shell.Config.AnthropicModel);
+    }
+
+    /// <summary>
+    /// "📂 Open folder" targets the folder the app actually reads, and stays
+    /// disabled when that folder isn't on disk (a hand-edited path, a removed
+    /// drive) rather than launching a file browser at nothing.
+    /// </summary>
+    [Fact]
+    public void Open_folder_is_enabled_only_when_the_data_folder_exists()
+    {
+        var shell = FreshShell("");
+        var vm = new ConfigPageViewModel(shell);
+        Directory.CreateDirectory(vm.DataDir);
+
+        Assert.True(vm.CanOpenDataFolder);
+        Assert.True(vm.OpenDataFolderCommand.CanExecute(null));
+
+        vm.DataDir = Path.Combine(Path.GetTempPath(), "if-not-here-" + Guid.NewGuid().ToString("N")[..8]);
+        Assert.False(vm.CanOpenDataFolder);
+        Assert.False(vm.OpenDataFolderCommand.CanExecute(null));
     }
 
     [Fact]

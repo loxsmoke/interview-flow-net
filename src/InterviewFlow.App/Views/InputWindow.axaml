@@ -4,7 +4,7 @@
         Width="420" SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
-        SystemDecorations="None"
+        WindowDecorations="None"
         TransparencyLevelHint="Transparent"
         Background="Transparent">
   <!-- Single-field input modal (save-to-library description etc.). -->

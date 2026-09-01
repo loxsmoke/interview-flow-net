@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using InterviewFlow.Core.Agents;
@@ -15,6 +15,10 @@ public sealed partial class ResumeTailorPageViewModel : ObservableObject, IDispo
 {
     private readonly MainViewModel _shell;
     private string _lastSaved = "";
+    // Diff baseline: the resume as it stood when this page loaded. Unlike
+    // _lastSaved it survives Save/auto-save, so the Comparison tab keeps
+    // showing what tailoring changed instead of going blank after a save.
+    private string _diffBaseline = "";
 
     public AgentRunViewModel Run { get; }
     public ChatViewModel Coach { get; }
@@ -28,6 +32,8 @@ public sealed partial class ResumeTailorPageViewModel : ObservableObject, IDispo
     [ObservableProperty] private bool _showCoach;
     [ObservableProperty] private bool _justSaved;
     [ObservableProperty] private string _updateError = "";
+    [ObservableProperty] private bool _hasDiff;
+    [ObservableProperty] private string _diffCaption = "";
     [ObservableProperty] private double _costUsd;
     [ObservableProperty] private string _costDetail = "";
     [ObservableProperty]
@@ -73,6 +79,7 @@ public sealed partial class ResumeTailorPageViewModel : ObservableObject, IDispo
         Analysis = s.ResumeReview;
         TaggedResume = s.ResumeTagged.Length > 0 ? s.ResumeTagged : s.ResumeText;
         _lastSaved = TaggedResume;
+        _diffBaseline = TaggedResume;
         CostUsd = s.ResumeReviewCostUsd;
         CostDetail = AgentPageViewModel.FormatCostDetail(
             s.ResumeReviewModelName, s.ResumeReviewDurationMs, s.ResumeReviewRanAt);
@@ -84,6 +91,8 @@ public sealed partial class ResumeTailorPageViewModel : ObservableObject, IDispo
 
     partial void OnTaggedResumeChanged(string value) => RebuildDiff();
 
+    partial void OnAnalysisChanged(string value) => RebuildDiff();
+
     partial void OnSelectedTabChanged(int value)
     {
         if (value == 2)
@@ -92,9 +101,26 @@ public sealed partial class ResumeTailorPageViewModel : ObservableObject, IDispo
 
     private void RebuildDiff()
     {
+        var rows = LineDiff.Compute(_diffBaseline, TaggedResume);
+        var caption = "Resume on entry  →  current editor text";
+
+        // Untouched editor: fall back to the draft inside the analysis so the
+        // tab shows what the tailor proposes instead of an all-grey copy.
+        if (!rows.Exists(r => r.Kind != DiffKind.Same))
+        {
+            var draft = TailoredResume.Extract(Analysis);
+            if (draft is not null && draft.Trim() != TaggedResume.Trim())
+            {
+                rows = LineDiff.Compute(TaggedResume, draft);
+                caption = "Current resume  →  AI tailored draft";
+            }
+        }
+
         DiffRows.Clear();
-        foreach (var row in LineDiff.Compute(_lastSaved, TaggedResume))
+        foreach (var row in rows)
             DiffRows.Add(row);
+        HasDiff = rows.Exists(r => r.Kind != DiffKind.Same);
+        DiffCaption = HasDiff ? caption : "";
     }
 
     [RelayCommand]

@@ -208,7 +208,7 @@ public sealed class DocxExporterTests
         var bytes = DocxExporter.Build(Tagged, "John Smith", "john@x.com", Fixture("Resume-Template.docx"));
 
         using var doc = WordprocessingDocument.Open(new MemoryStream(bytes), false);
-        var body = doc.MainDocumentPart!.Document.Body!;
+        var body = doc.MainDocumentPart!.Document!.Body!;
         var paragraphs = body.Elements<DocumentFormat.OpenXml.Wordprocessing.Paragraph>().ToList();
         var texts = paragraphs.Select(p => p.InnerText).ToList();
 
@@ -241,7 +241,7 @@ public sealed class DocxExporterTests
     {
         var bytes = DocxExporter.Build("# Jane\n## Skills\n- C#\nplain", "", "", templatePath: null);
         using var doc = WordprocessingDocument.Open(new MemoryStream(bytes), false);
-        var texts = doc.MainDocumentPart!.Document.Body!
+        var texts = doc.MainDocumentPart!.Document!.Body!
             .Elements<DocumentFormat.OpenXml.Wordprocessing.Paragraph>()
             .Select(p => p.InnerText).ToList();
         Assert.Equal("[NAME HERE]", texts[0]);

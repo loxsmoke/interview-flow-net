@@ -12,6 +12,10 @@ namespace InterviewFlow.App.ViewModels;
 /// the queue dropdown, the live trace (with replay when re-opening a screen
 /// mid-run), and error surfacing from failed queue items. Pages subscribe to
 /// Completed to refresh their body. Dispose on page swap.
+///
+/// The dropdown is a *pending* selection (index.html:2270-2385): opening seeds
+/// the checkboxes from the live queue, ticking one changes nothing, and only
+/// Apply commits the diff (enqueue newly ticked / unqueue newly cleared).
 /// </summary>
 public sealed partial class AgentRunViewModel : ObservableObject, IDisposable
 {
@@ -33,6 +37,9 @@ public sealed partial class AgentRunViewModel : ObservableObject, IDisposable
     private string _errorMessage = "";
     [ObservableProperty] private string _errorDetail = "";
 
+    /// <summary>Label of the dropdown's left button — mirrors the original's flip.</summary>
+    public string SelectAllLabel => AllSelected ? "Clear all" : "Select all";
+
     public bool HasError => ErrorMessage.Length > 0 && !IsRunningHere;
     public bool ShowResult => !IsRunningHere && !HasError;
 
@@ -44,7 +51,8 @@ public sealed partial class AgentRunViewModel : ObservableObject, IDisposable
         _shell = shell;
         SectionKey = sectionKey;
         foreach (var (key, _) in QueueManager.SectionOrder.OrderBy(kv => kv.Value))
-            DropdownItems.Add(new QueueDropdownItemViewModel(key, QueueManager.SectionTitles[key], Toggle));
+            DropdownItems.Add(new QueueDropdownItemViewModel(
+                key, QueueManager.SectionTitles[key], OnSelectionChanged));
 
         _queueHandler = snapshot =>
         {
@@ -70,15 +78,16 @@ public sealed partial class AgentRunViewModel : ObservableObject, IDisposable
         ErrorMessage = failed?.Error ?? "";
         ErrorDetail = failed?.ErrorDetail ?? "";
 
+        // Only the running lock tracks the queue live; checkbox state is the
+        // user's pending selection, seeded on open and committed by Apply.
         foreach (var item in DropdownItems)
         {
-            var isRunning = snapshot.Running is { } run
+            item.IsRunning = snapshot.Running is { } run
                 && run.StateId == stateId && run.SectionKey == item.Key;
-            var isQueued = snapshot.Queued.Any(i => i.StateId == stateId && i.SectionKey == item.Key);
-            item.IsChecked = isRunning || isQueued;
-            item.IsEnabled = !isRunning;
+            item.IsEnabled = !item.IsRunning;
         }
 
+        OnPropertyChanged(nameof(SelectAllLabel));
         ManageSubscription(snapshot);
     }
 
@@ -142,15 +151,71 @@ public sealed partial class AgentRunViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void Toggle(QueueDropdownItemViewModel item)
+    /// <summary>
+    /// Seeds the checkboxes from the live queue (running + waiting) — call when
+    /// the dropdown opens, so a re-open never shows stale ticks.
+    /// </summary>
+    public void SeedSelection()
     {
         var snapshot = _shell.Queue.Snapshot();
-        var queued = snapshot.Queued.FirstOrDefault(i => i.StateId == StateId && i.SectionKey == item.Key);
-        if (queued is not null)
-            _shell.UnqueueItem(queued.Id);
-        else if (!item.IsChecked)
-            _shell.EnqueueSection(item.Key);
+        var stateId = StateId;
+        foreach (var item in DropdownItems)
+        {
+            item.IsRunning = snapshot.Running is { } run
+                && run.StateId == stateId && run.SectionKey == item.Key;
+            item.IsEnabled = !item.IsRunning;
+            item.IsChecked = item.IsRunning
+                || snapshot.Queued.Any(i => i.StateId == stateId && i.SectionKey == item.Key);
+        }
+
+        OnPropertyChanged(nameof(SelectAllLabel));
     }
+
+    /// <summary>Select all / Clear all — the running section keeps its lock.</summary>
+    [RelayCommand]
+    private void ToggleSelectAll()
+    {
+        var select = !AllSelected;
+        foreach (var item in DropdownItems.Where(i => !i.IsRunning))
+            item.IsChecked = select;
+
+        OnPropertyChanged(nameof(SelectAllLabel));
+    }
+
+    /// <summary>
+    /// Commits the pending selection: newly ticked sections are enqueued (this
+    /// is the only path that starts AI work from the dropdown), cleared ones are
+    /// unqueued. The running section is left alone.
+    /// </summary>
+    public void ApplySelection()
+    {
+        var stateId = StateId;
+        foreach (var item in DropdownItems)
+        {
+            if (item.IsRunning)
+                continue;
+
+            // Re-snapshot per item: enqueueing promotes and reshapes the queue.
+            var queued = _shell.Queue.Snapshot().Queued
+                .FirstOrDefault(i => i.StateId == stateId && i.SectionKey == item.Key);
+            if (item.IsChecked && queued is null)
+                _shell.EnqueueSection(item.Key);
+            else if (!item.IsChecked && queued is not null)
+                _shell.UnqueueItem(queued.Id);
+        }
+    }
+
+    private bool AllSelected
+    {
+        get
+        {
+            var selectable = DropdownItems.Where(i => !i.IsRunning).ToList();
+            return selectable.Count > 0 && selectable.All(i => i.IsChecked);
+        }
+    }
+
+    private void OnSelectionChanged(QueueDropdownItemViewModel _)
+        => OnPropertyChanged(nameof(SelectAllLabel));
 
     public void Dispose()
     {
@@ -160,16 +225,19 @@ public sealed partial class AgentRunViewModel : ObservableObject, IDisposable
     }
 }
 
-/// <summary>One row of the queue dropdown (checkbox list of the 8 sections).</summary>
+/// <summary>
+/// One row of the queue dropdown (checkbox list of the 8 sections). Ticking is
+/// local state only — <see cref="AgentRunViewModel.ApplySelection"/> commits it.
+/// </summary>
 public sealed partial class QueueDropdownItemViewModel(
-    string key, string title, Action<QueueDropdownItemViewModel> toggle) : ObservableObject
+    string key, string title, Action<QueueDropdownItemViewModel> selectionChanged) : ObservableObject
 {
     public string Key { get; } = key;
     public string Title { get; } = title;
 
     [ObservableProperty] private bool _isChecked;
     [ObservableProperty] private bool _isEnabled = true;
+    [ObservableProperty] private bool _isRunning;
 
-    [RelayCommand]
-    private void Toggle() => toggle(this);
+    partial void OnIsCheckedChanged(bool value) => selectionChanged(this);
 }

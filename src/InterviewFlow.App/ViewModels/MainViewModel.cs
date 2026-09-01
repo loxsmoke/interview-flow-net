@@ -21,14 +21,6 @@ public sealed partial class MainViewModel : ObservableObject
 {
     public const int StepCount = 12;
 
-    private static readonly string[] TechnicalKeywords =
-    [
-        "engineer", "developer", "programmer", "software", "coding", "swe",
-        "backend", "frontend", "fullstack", "full-stack", "full stack",
-        "data scientist", "data engineer", "ml engineer", "machine learning",
-        "devops", "sre",
-    ];
-
     public AppConfig Config { get; }
     public StateStore Store { get; private set; }
     public CustomActionStore ActionStore { get; private set; }
@@ -100,10 +92,24 @@ public sealed partial class MainViewModel : ObservableObject
             CustomActions.Add(a);
     }
 
+    /// <summary>
+    /// Position as typed on the Setup screen, before it is saved. The sidebar's
+    /// "(tech)" badge follows it live (index.html onTechChange), so while Setup
+    /// is open the draft wins over the persisted position.
+    /// </summary>
+    private string? _draftPosition;
+
+    /// <summary>Called by the Setup page on every keystroke in Position.</summary>
+    public void SetDraftPosition(string? position)
+    {
+        _draftPosition = position;
+        RefreshStepStates(Steps.FirstOrDefault(s => s.IsActive)?.Key ?? "");
+    }
+
     private void RefreshStepStates(string activeKey)
     {
         var completed = CurrentState?.CompletedSteps ?? [];
-        var isTech = IsTechnicalRole(CurrentState?.Position);
+        var isTech = IsTechnicalRole(_draftPosition ?? CurrentState?.Position);
         foreach (var step in Steps)
         {
             step.IsActive = step.Key == activeKey;
@@ -113,13 +119,8 @@ public sealed partial class MainViewModel : ObservableObject
         }
     }
 
-    private static bool IsTechnicalRole(string? position)
-    {
-        if (string.IsNullOrEmpty(position))
-            return false;
-        var lower = position.ToLowerInvariant();
-        return TechnicalKeywords.Any(lower.Contains);
-    }
+    private static bool IsTechnicalRole(string? position) =>
+        !string.IsNullOrEmpty(position) && Core.Agents.SectionAgents.IsTechnicalRole(position);
 
     // ── Derived shell state ──────────────────────────────────────────────────
 
@@ -127,9 +128,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     public string CompanyLabel => CurrentState?.CompanyName ?? "";
 
+    /// <summary>Title bar: app name — version — selected company.</summary>
     public string WindowTitle => CurrentState is { CompanyName.Length: > 0 } s
-        ? $"{s.CompanyName} — {s.Position} | Interview Flow v{Version}"
-        : $"Interview Flow v{Version}";
+        ? $"Interview Flow — v{Version} — {s.CompanyName}"
+        : $"Interview Flow — v{Version}";
 
     public int ProgressCompleted =>
         CurrentState?.CompletedSteps.Count(k => Steps.Any(s => s.Key == k)) ?? 0;
@@ -175,6 +177,10 @@ public sealed partial class MainViewModel : ObservableObject
         // after SelectWorkflow the flags haven't been refreshed yet.
         if (step is null || (step.Key != "setup" && CurrentState is null))
             return;
+
+        // Leaving Setup (or reopening it) drops the unsaved draft; the badge
+        // falls back to the persisted position.
+        _draftPosition = null;
 
         CurrentPage = key switch
         {

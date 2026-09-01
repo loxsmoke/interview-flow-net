@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -6,12 +6,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <Version>0.1.0</Version>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- Windows exe icon; regenerate with tools/make-icons.py after logo edits. -->
+    <ApplicationIcon>Assets/icon.ico</ApplicationIcon>
     <!-- XAML/generated code produces warnings we don't control. -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
+    <AvaloniaResource Include="Assets/**" />
     <!-- User-editable heading map, hot-read on every resume parse (docs/02 §2.5). -->
     <None Include="section-headings.md" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
@@ -27,7 +29,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\InterviewFlow.Core\InterviewFlow.Core.csproj" />
+    <ProjectReference Include="../InterviewFlow.Core/InterviewFlow.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="InterviewFlow.Tests" />
   </ItemGroup>
 
 </Project>

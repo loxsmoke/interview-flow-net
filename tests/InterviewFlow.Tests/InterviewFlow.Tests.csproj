@@ -30,8 +30,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\InterviewFlow.Core\InterviewFlow.Core.csproj" />
-    <ProjectReference Include="..\..\src\InterviewFlow.App\InterviewFlow.App.csproj" />
+    <ProjectReference Include="../../src/InterviewFlow.Core/InterviewFlow.Core.csproj" />
+    <ProjectReference Include="../../src/InterviewFlow.App/InterviewFlow.App.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Fixtures\**">
+    <Content Include="Fixtures/**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

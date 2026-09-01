@@ -51,6 +51,11 @@ public sealed class AppConfig(EnvFile env)
     /// <summary>The rule itself, with its search roots injected so it is testable.</summary>
     internal static string ResolveEnvPath(string? workingDir, string exeDir, string userDir)
     {
+        // "/" is what a macOS .app launched from Finder inherits — not a place to
+        // look for, let alone create, the user's .env.
+        if (!Paths.IsUsableWorkingDirectory(workingDir))
+            workingDir = null;
+
         foreach (var root in new[] { workingDir, exeDir, userDir })
         {
             if (root is null)

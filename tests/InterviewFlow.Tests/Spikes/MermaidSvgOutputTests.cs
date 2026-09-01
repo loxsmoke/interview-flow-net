@@ -73,7 +73,7 @@ public sealed class MermaidSvgOutputTests(ITestOutputHelper output) : IDisposabl
         // No nested tspans may survive post-processing (Svg.Skia skips them),
         // and rendering with vs without <text> must differ — otherwise labels
         // are invisible (the paint-order / nesting bugs this guards against).
-        Assert.Equal(0, System.Text.RegularExpressions.Regex.Matches(svg!, "<tspan[^>]*>\\s*<tspan").Count);
+        Assert.Empty(System.Text.RegularExpressions.Regex.Matches(svg!, "<tspan[^>]*>\\s*<tspan"));
         var withText = CountLightPixels(svg!);
         var withoutText = CountLightPixels(
             System.Text.RegularExpressions.Regex.Replace(svg!, "<text[\\s\\S]*?</text>", ""));

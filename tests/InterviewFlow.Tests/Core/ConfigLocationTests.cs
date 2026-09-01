@@ -73,6 +73,21 @@ public sealed class ConfigLocationTests : IDisposable
     }
 
     [Fact]
+    public void The_filesystem_root_is_not_treated_as_a_working_directory()
+    {
+        // A .app bundle launched from Finder starts with "/" as its cwd; neither
+        // "/.env" nor "/data" is ours to read or create.
+        var (_, exe, user) = Roots();
+        var root = Path.GetPathRoot(Path.GetFullPath(_dir))!;
+
+        Assert.Equal(Path.Combine(user, ".env"), AppConfig.ResolveEnvPath(root, exe, user));
+
+        Environment.CurrentDirectory = root;
+        var data = Paths.DataDir("");
+        Assert.NotEqual(Path.Combine(root, "data"), data);
+    }
+
+    [Fact]
     public void Saving_materializes_the_file_in_the_working_directory()
     {
         Environment.CurrentDirectory = _dir;

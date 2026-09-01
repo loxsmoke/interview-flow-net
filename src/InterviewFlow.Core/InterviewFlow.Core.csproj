@@ -16,8 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Rendering\MermaidDom.js" />
-    <EmbeddedResource Include="Prompts\Templates\*.md" />
+    <EmbeddedResource Include="Rendering/MermaidDom.js" />
+    <EmbeddedResource Include="Prompts/Templates/*.md" />
   </ItemGroup>
 
   <ItemGroup>

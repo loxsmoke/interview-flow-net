@@ -174,7 +174,7 @@ public sealed class SectionRunnerTests : IDisposable
         handler.Enqueue(HttpStatusCode.OK,
             "{\"message\":{\"content\":\"## Six lens read\"}}", "application/x-ndjson");
 
-        var events = await Drain(runner.Stream(state.Id, "jd_decode", http: new HttpClient(handler)));
+        var events = await Drain(runner.Stream(state.Id, "jd_decode", ct: TestContext.Current.CancellationToken, http: new HttpClient(handler)));
 
         var complete = Assert.IsType<CompleteEvent>(events[^1]);
         Assert.NotEmpty(complete.RanAt);
@@ -200,7 +200,7 @@ public sealed class SectionRunnerTests : IDisposable
             ("stories", "Resume required for story mining"),
         })
         {
-            var events = await Drain(runner.Stream(state.Id, section));
+            var events = await Drain(runner.Stream(state.Id, section, TestContext.Current.CancellationToken));
             var error = Assert.IsType<ErrorEvent>(Assert.Single(events));
             Assert.Equal(message, error.Message);
         }
@@ -217,7 +217,7 @@ public sealed class SectionRunnerTests : IDisposable
             "{\"message\":{\"content\":\"[{\\\"title\\\":\\\"Fresh\\\",\\\"tags\\\":[\\\"t\\\"]}]\"}}",
             "application/x-ndjson");
 
-        var events = await Drain(runner.Stream(state.Id, "stories", http: new HttpClient(handler)));
+        var events = await Drain(runner.Stream(state.Id, "stories", ct: TestContext.Current.CancellationToken, http: new HttpClient(handler)));
 
         Assert.IsType<CompleteEvent>(events[^1]);
         var saved = store.LoadState(state.Id)!;
@@ -237,7 +237,7 @@ public sealed class SectionRunnerTests : IDisposable
         handler.Enqueue(HttpStatusCode.OK,
             "{\"message\":{\"content\":\"the answer\"}}", "application/x-ndjson");
 
-        var events = await Drain(runner.Stream(state.Id, $"custom:{action.Id}", http: new HttpClient(handler)));
+        var events = await Drain(runner.Stream(state.Id, $"custom:{action.Id}", ct: TestContext.Current.CancellationToken, http: new HttpClient(handler)));
 
         Assert.IsType<CompleteEvent>(events[^1]);
         var saved = store.LoadState(state.Id)!;
@@ -253,7 +253,7 @@ public sealed class SectionRunnerTests : IDisposable
         var (runner, store, _, _) = Make();
         var state = new InterviewState();
         store.SaveState(state);
-        var events = await Drain(runner.Stream(state.Id, "custom:deadbeef0000"));
+        var events = await Drain(runner.Stream(state.Id, "custom:deadbeef0000", TestContext.Current.CancellationToken));
         Assert.Equal("Custom action not found", Assert.IsType<ErrorEvent>(Assert.Single(events)).Message);
     }
 
@@ -268,7 +268,7 @@ public sealed class SectionRunnerTests : IDisposable
         store.SaveState(state);
         var runner = new SectionRunner(new AppConfig(EnvFile.Load(envPath)), store, new CustomActionStore(_dir));
 
-        var events = await Drain(runner.Stream(state.Id, "research"));
+        var events = await Drain(runner.Stream(state.Id, "research", TestContext.Current.CancellationToken));
         Assert.Contains("No AI provider configured", Assert.IsType<ErrorEvent>(Assert.Single(events)).Message);
     }
 }

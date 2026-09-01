@@ -52,7 +52,7 @@
       <TextBox Grid.Column="0" x:Name="Composer" Classes="field"
                Text="{Binding Draft}" AcceptsReturn="True" TextWrapping="Wrap"
                MinHeight="72" MaxHeight="160" VerticalContentAlignment="Top"
-               Watermark="Type your answer… (Enter to send, Shift+Enter for a new line)"
+               PlaceholderText="Type your answer… (Enter to send, Shift+Enter for a new line)"
                KeyDown="OnComposerKeyDown" />
       <Button Grid.Column="1" Classes="primary" Content="Send" Margin="10,0,0,0"
               VerticalAlignment="Bottom"

@@ -140,7 +140,7 @@ public sealed class JobPostingFetcherTests : IDisposable
     [Fact]
     public async Task Non_url_input_passes_through_untouched()
     {
-        var result = await JobPostingFetcher.ResolveAsync(Config(), "Plain posting text");
+        var result = await JobPostingFetcher.ResolveAsync(Config(), "Plain posting text", TestContext.Current.CancellationToken);
         Assert.Equal("Plain posting text", result.Text);
         Assert.False(result.WasFetched);
         Assert.Null(result.Error);
@@ -151,7 +151,7 @@ public sealed class JobPostingFetcherTests : IDisposable
     {
         var handler = new FakeHandler(); // nothing queued — a request would throw
         var result = await JobPostingFetcher.ResolveAsync(
-            Config(), "http://127.0.0.1:8000/job", http: new HttpClient(handler));
+            Config(), "http://127.0.0.1:8000/job", ct: TestContext.Current.CancellationToken, http: new HttpClient(handler));
         Assert.NotNull(result.Error);
         Assert.Empty(handler.Requests);
     }
@@ -164,7 +164,7 @@ public sealed class JobPostingFetcherTests : IDisposable
         handler.Enqueue(HttpStatusCode.OK, body, "text/html");
 
         var result = await JobPostingFetcher.ResolveAsync(
-            Config(), "https://example.com/job", http: new HttpClient(handler));
+            Config(), "https://example.com/job", ct: TestContext.Current.CancellationToken, http: new HttpClient(handler));
 
         Assert.True(result.WasFetched);
         Assert.False(result.UsedLlmFallback);
@@ -178,7 +178,7 @@ public sealed class JobPostingFetcherTests : IDisposable
         handler.Enqueue(HttpStatusCode.OK, "<html><body>Loading…</body></html>", "text/html");
 
         var result = await JobPostingFetcher.ResolveAsync(
-            Config("ACTIVE_PROVIDER=ollama\n"), "https://example.com/job", http: new HttpClient(handler));
+            Config("ACTIVE_PROVIDER=ollama\n"), "https://example.com/job", ct: TestContext.Current.CancellationToken, http: new HttpClient(handler));
 
         Assert.Equal(JobPostingFetcher.CouldNotExtractMessage, result.Error);
         Assert.Single(handler.Requests); // no provider call attempted
@@ -196,7 +196,7 @@ public sealed class JobPostingFetcherTests : IDisposable
 
         var result = await JobPostingFetcher.ResolveAsync(
             Config("ACTIVE_PROVIDER=anthropic\nANTHROPIC_API_KEY=sk-test\n"),
-            "https://example.com/job", http: new HttpClient(handler));
+            "https://example.com/job", ct: TestContext.Current.CancellationToken, http: new HttpClient(handler));
 
         Assert.True(result.UsedLlmFallback);
         Assert.Equal(posting, result.Text);

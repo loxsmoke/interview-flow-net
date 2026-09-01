@@ -81,7 +81,7 @@ public sealed class ChatSessionTests : IDisposable
         var session = new MockInterviewSession(config, "Acme", "JD", "resume", "stories",
             "behavioral", new HttpClient(handler));
 
-        var opening = await session.StartAsync();
+        var opening = await session.StartAsync(TestContext.Current.CancellationToken);
         Assert.Equal("Welcome. Tell me about yourself.", opening);
         Assert.True(session.IsStarted);
         Assert.False(session.IsComplete);
@@ -102,8 +102,8 @@ public sealed class ChatSessionTests : IDisposable
         var session = new MockInterviewSession(config, "Acme", "JD", "resume", "stories",
             "system_design", new HttpClient(handler));
 
-        await session.StartAsync();
-        var reply = await session.RespondAsync("My answer");
+        await session.StartAsync(TestContext.Current.CancellationToken);
+        var reply = await session.RespondAsync("My answer", TestContext.Current.CancellationToken);
 
         Assert.True(session.IsComplete);
         Assert.Equal(3, session.History.Count); // opening, user, final
@@ -120,8 +120,8 @@ public sealed class ChatSessionTests : IDisposable
         EnqueueReply(handler, "Q2");
         var session = new MockInterviewSession(config, "Acme", "JD", "", "", "panel", new HttpClient(handler));
 
-        await session.StartAsync();
-        await session.RespondAsync("A1");
+        await session.StartAsync(TestContext.Current.CancellationToken);
+        await session.RespondAsync("A1", TestContext.Current.CancellationToken);
 
         // Second request replays system + opening + assistant + user turns.
         var body = handler.Requests[1].Body;
@@ -139,7 +139,7 @@ public sealed class ChatSessionTests : IDisposable
         var session = new ResumeChatSession(config, "JD", "resume text", "PRIOR ANALYSIS",
             new HttpClient(handler));
 
-        var opening = await session.StartAsync();
+        var opening = await session.StartAsync(TestContext.Current.CancellationToken);
         Assert.StartsWith("Here are the top 3", opening);
         var body = handler.Requests[0].Body;
         Assert.Contains("top 3 changes", body);          // opening user message
@@ -152,7 +152,7 @@ public sealed class ChatSessionTests : IDisposable
     {
         var (config, handler) = Make();
         var session = new ResumeChatSession(config, "JD", "resume", http: new HttpClient(handler));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => session.RespondAsync("hi"));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => session.RespondAsync("hi", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public sealed class ChatSessionTests : IDisposable
         EnqueueReply(handler, "ok");
         var session = new MockInterviewSession(config, "Acme", "JD", "", "", "behavioral",
             new HttpClient(handler));
-        await session.StartAsync();
+        await session.StartAsync(TestContext.Current.CancellationToken);
         // mock-interview → 0.9, under the 1.0 Ollama clamp.
         Assert.Contains("\"temperature\":0.9", handler.Requests[0].Body);
     }

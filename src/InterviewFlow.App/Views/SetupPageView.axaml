@@ -47,35 +47,45 @@
               Background="{StaticResource PanelBackgroundBrush}"
               BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
               CornerRadius="12" HorizontalAlignment="Stretch">
-      <ItemsControl ItemsSource="{Binding SavedApplications}" Margin="4">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="state:StateSummary">
-            <Grid ColumnDefinitions="Auto,12,*,Auto,8,Auto" Margin="8,4">
-              <Button Grid.Column="0" Classes="subtle" Content="Select"
-                      Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).SelectCommand}"
-                      CommandParameter="{Binding}" />
-              <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <TextBlock Text="{Binding CompanyName}" FontSize="13" FontWeight="Medium"
-                             Foreground="{StaticResource TextPrimaryBrush}" />
-                  <TextBlock Text="—" FontSize="13" Foreground="{StaticResource TextMutedBrush}"
-                             IsVisible="{Binding Position, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                  <TextBlock Text="{Binding Position}" FontSize="13"
-                             Foreground="{StaticResource TextMutedBrush}" />
+      <!-- MaxHeight + ScrollViewer: the list can hold hundreds of applications and the
+           Expander sits in an Auto row, so without this it grows past the window edge. -->
+      <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl ItemsSource="{Binding SavedApplications}" Margin="4">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="state:StateSummary">
+              <Grid ColumnDefinitions="Auto,12,*,Auto,8,Auto" Margin="8,4">
+                <Button Grid.Column="0" Classes="subtle" Content="Select"
+                        Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).SelectCommand}"
+                        CommandParameter="{Binding}" />
+                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="{Binding CompanyName}" FontSize="13" FontWeight="Medium"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="—" FontSize="13" Foreground="{StaticResource TextMutedBrush}"
+                               IsVisible="{Binding Position, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Text="{Binding Position}" FontSize="13"
+                               Foreground="{StaticResource TextMutedBrush}" />
+                  </StackPanel>
+                  <TextBlock FontSize="11" Foreground="#64748B"
+                             Text="{Binding Converter={x:Static views:SummaryDetailConverter.Instance}}" />
                 </StackPanel>
-                <TextBlock FontSize="11" Foreground="#64748B"
-                           Text="{Binding Converter={x:Static views:SummaryDetailConverter.Instance}}" />
-              </StackPanel>
-              <Button Grid.Column="3" Classes="subtle" Content="Clone"
-                      Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).CloneCommand}"
-                      CommandParameter="{Binding}" />
-              <Button Grid.Column="5" Classes="danger" Content="Delete"
-                      Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).DeleteCommand}"
-                      CommandParameter="{Binding}" />
-            </Grid>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+                <Button Grid.Column="3" Classes="subtle" Content="Clone"
+                        Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).CloneCommand}"
+                        CommandParameter="{Binding}" />
+                <Button Grid.Column="5" Classes="danger" Content="Delete"
+                        Command="{Binding #Root.((pages:SetupPageViewModel)DataContext).DeleteCommand}"
+                        CommandParameter="{Binding}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
     </Expander>
 
     <!-- Company / Position -->
@@ -83,28 +93,49 @@
       <StackPanel Grid.Column="0" Spacing="6">
         <TextBlock Text="Company Name" FontSize="12" FontWeight="Medium"
                    Foreground="{StaticResource TextMutedBrush}" />
-        <TextBox Classes="field" Text="{Binding CompanyName}" Watermark="Acme Inc." />
+        <TextBox Classes="field" Text="{Binding CompanyName}" PlaceholderText="Acme Inc." />
         <TextBlock Text="Text after | is treated as a comment and stripped in exports"
                    FontSize="11" Foreground="#64748B" />
       </StackPanel>
       <StackPanel Grid.Column="2" Spacing="6">
-        <TextBlock Text="Position" FontSize="12" FontWeight="Medium"
-                   Foreground="{StaticResource TextMutedBrush}" />
-        <TextBox Classes="field" Text="{Binding Position}" Watermark="Staff Software Engineer" />
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <TextBlock Text="Position" FontSize="12" FontWeight="Medium"
+                     Foreground="{StaticResource TextMutedBrush}" />
+          <!-- Same "(tech)" hint the sidebar shows on Interview Intel (§3.2). -->
+          <TextBlock Text="(tech)" FontSize="12" FontWeight="Medium"
+                     Foreground="{StaticResource InfoSkyBrush}"
+                     IsVisible="{Binding TechDetected}"
+                     ToolTip.Tip="Technical role detected — Interview Intel will also search for coding problems, system design questions, and technical interview patterns." />
+        </StackPanel>
+        <TextBox Classes="field" Text="{Binding Position}" PlaceholderText="Staff Software Engineer" />
       </StackPanel>
     </Grid>
 
     <!-- Job posting -->
     <Grid Grid.Row="4" RowDefinitions="Auto,Auto,*">
-      <TextBlock Grid.Row="0" Text="Job Posting (paste text, or a URL to fetch)" FontSize="12"
-                 FontWeight="Medium" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,6" />
+      <!-- Label + Fetch button. The button resolves the URL in place; it never
+           saves or navigates, unlike Save & Continue (§3.2). -->
+      <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,6"
+                  HorizontalAlignment="Left">
+        <TextBlock Text="Job Posting (paste text, or a URL to fetch)" FontSize="12"
+                   FontWeight="Medium" Foreground="{StaticResource TextMutedBrush}"
+                   VerticalAlignment="Center" />
+        <Button Classes="subtle" Padding="10,4" FontSize="11" VerticalAlignment="Center"
+                Command="{Binding FetchFromUrlCommand}"
+                ToolTip.Tip="Fetch the posting text from the pasted URL and fill Company/Position — stays on this page">
+          <Panel>
+            <TextBlock Text="⤓ Fetch from URL" IsVisible="{Binding !IsFetching}" />
+            <TextBlock Text="Fetching…" IsVisible="{Binding IsFetching}" />
+          </Panel>
+        </Button>
+      </StackPanel>
       <TextBlock Grid.Row="1" Text="{Binding FetchStatus}" FontSize="11" TextWrapping="Wrap"
                  Foreground="{StaticResource InfoSkyBrush}" Margin="0,0,0,6"
                  IsVisible="{Binding HasFetchStatus}" />
       <TextBox Grid.Row="2" Classes="field" Text="{Binding JobPosting}"
                AcceptsReturn="True" TextWrapping="Wrap"
                VerticalContentAlignment="Top"
-               Watermark="Paste the full job posting here — or a link to it…" />
+               PlaceholderText="Paste the full job posting here — or a link to it…" />
     </Grid>
   </Grid>
 </UserControl>

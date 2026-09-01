@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using InterviewFlow.Core.Models;
@@ -22,6 +22,7 @@ public sealed partial class ResumePageViewModel : ObservableObject
     [ObservableProperty] private string _uploadError = "";
     [ObservableProperty] private string _uploadedInfo = "";
     [ObservableProperty] private int _selectedTab;
+    [ObservableProperty] private bool _savedExpanded;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasExportPath))]
     private string _exportedPath = "";
@@ -139,6 +140,7 @@ public sealed partial class ResumePageViewModel : ObservableObject
             .Trim();
         RawText = "";
         UploadedInfo = $"From library: {resume.Description}";
+        SavedExpanded = false;
     }
 
     [RelayCommand]

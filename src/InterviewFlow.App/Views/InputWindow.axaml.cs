@@ -12,7 +12,7 @@ public sealed partial class InputWindow : Window
     {
         this.FindControl<TextBlock>("TitleText")!.Text = title;
         var box = this.FindControl<TextBox>("ValueBox")!;
-        box.Watermark = watermark;
+        box.PlaceholderText = watermark;
         Opened += (_, _) => box.Focus();
     }
 

@@ -81,7 +81,7 @@ The original SPA has a fixed 240 px sidebar and swaps the main content area. Por
 
 - `MainWindow` hosts `SidebarView` + a `ContentControl` bound to `MainViewModel.CurrentPage` (a screen VM).
 - Screen VM → View resolution via typed `DataTemplate`s in `MainWindow.axaml` (or a real ViewLocator — decide at implementation; typed templates preferred, matching openlogi-net's item-template idiom).
-- Window title bound: `"{Company} — {Position} | Interview Flow v{version}"`, falling back to `"Interview Flow v{version}"`.
+- Window title bound: `"Interview Flow — v{version} — {Company}"`, falling back to `"Interview Flow — v{version}"`.
 - Window: 1400×900 default, 900×600 minimum (matches pywebview settings).
 
 ## Cross-platform strategy (Windows + macOS)

@@ -70,7 +70,7 @@
           <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBox Grid.Column="0" Classes="field" Text="{Binding AnthropicKey}"
                      PasswordChar="{Binding ShowAnthropicKey, Converter={x:Static views:ConfigPageView.MaskChar}}"
-                     Watermark="sk-ant-api03-…" />
+                     PlaceholderText="sk-ant-api03-…" />
             <Button Grid.Column="1" Classes="icon" Margin="6,0,0,0" Click="OnToggleAnthropicKey"
                     ToolTip.Tip="Show / hide key">
               <TextBlock Text="👁" FontSize="14" />
@@ -106,7 +106,7 @@
           <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBox Grid.Column="0" Classes="field" Text="{Binding OpenAiKey}"
                      PasswordChar="{Binding ShowOpenAiKey, Converter={x:Static views:ConfigPageView.MaskChar}}"
-                     Watermark="sk-proj-…" />
+                     PlaceholderText="sk-proj-…" />
             <Button Grid.Column="1" Classes="icon" Margin="6,0,0,0" Click="OnToggleOpenAiKey">
               <TextBlock Text="👁" FontSize="14" />
             </Button>
@@ -141,7 +141,7 @@
           <Grid ColumnDefinitions="*,Auto,Auto">
             <TextBox Grid.Column="0" Classes="field" Text="{Binding GeminiKey}"
                      PasswordChar="{Binding ShowGeminiKey, Converter={x:Static views:ConfigPageView.MaskChar}}"
-                     Watermark="AIza…" />
+                     PlaceholderText="AIza…" />
             <Button Grid.Column="1" Classes="icon" Margin="6,0,0,0" Click="OnToggleGeminiKey">
               <TextBlock Text="👁" FontSize="14" />
             </Button>
@@ -159,7 +159,7 @@
             <ComboBox ItemsSource="{Binding GeminiModels}" SelectedItem="{Binding SelectedGeminiModel}" DisplayMemberBinding="{Binding Display}"
                       HorizontalAlignment="Stretch" FontSize="12" IsVisible="{Binding GeminiModels.Count}" />
             <TextBox Classes="field" Text="{Binding GeminiModel}" FontSize="12"
-                     Watermark="gemini-3.6-flash" IsVisible="{Binding !GeminiModels.Count}" />
+                     PlaceholderText="gemini-3.6-flash" IsVisible="{Binding !GeminiModels.Count}" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -171,7 +171,7 @@
                        IsChecked="{Binding IsOllama}" Click="OnProviderClick" Tag="ollama" />
           <StackPanel Spacing="4">
             <TextBlock Classes="fieldLabel" Text="Base URL" />
-            <TextBox Classes="field" Text="{Binding OllamaBaseUrl}" Watermark="http://localhost:11434" />
+            <TextBox Classes="field" Text="{Binding OllamaBaseUrl}" PlaceholderText="http://localhost:11434" />
           </StackPanel>
           <StackPanel Spacing="4">
             <DockPanel>
@@ -183,7 +183,7 @@
             <ComboBox ItemsSource="{Binding OllamaModels}" SelectedItem="{Binding SelectedOllamaModel}" DisplayMemberBinding="{Binding Display}"
                       HorizontalAlignment="Stretch" FontSize="12" IsVisible="{Binding OllamaModels.Count}" />
             <TextBox Classes="field" Text="{Binding OllamaModel}" FontSize="12"
-                     Watermark="llama3.2" IsVisible="{Binding !OllamaModels.Count}" />
+                     PlaceholderText="llama3.2" IsVisible="{Binding !OllamaModels.Count}" />
             <TextBlock FontSize="11" Foreground="{StaticResource WarningAmberBrush}" TextWrapping="Wrap"
                        IsVisible="{Binding SelectedOllamaLacksTools}"
                        Text="⚠ This model has no tool support — web search sections will fall back to training data." />
@@ -207,12 +207,12 @@
         <StackPanel Spacing="10">
           <StackPanel Spacing="4">
             <TextBlock Classes="fieldLabel" Text="Full name (used in .docx exports)" />
-            <TextBox Classes="field" Text="{Binding ResumeName}" Watermark="John Smith" />
+            <TextBox Classes="field" Text="{Binding ResumeName}" PlaceholderText="John Smith" />
           </StackPanel>
           <StackPanel Spacing="4">
             <TextBlock Classes="fieldLabel" Text="Contact info" />
             <TextBox Classes="field" Text="{Binding ResumeContact}"
-                     Watermark="john@example.com | Mountain View, CA" />
+                     PlaceholderText="john@example.com | Mountain View, CA" />
           </StackPanel>
         </StackPanel>
       </Border>

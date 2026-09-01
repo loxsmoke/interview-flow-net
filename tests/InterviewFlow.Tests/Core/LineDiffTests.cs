@@ -58,7 +58,7 @@ public sealed class LineDiffTests
         const string after = "[Section Heading]Experience\n[Job title]Staff Engineer | Acme\n[Job bullet]Did work";
         var rows = LineDiff.Compute(before, after);
         Assert.Equal(4, rows.Count);
-        Assert.Single(rows.Where(r => r.Kind == DiffKind.Deleted));
-        Assert.Single(rows.Where(r => r.Kind == DiffKind.Added));
+        Assert.Single(rows, r => r.Kind == DiffKind.Deleted);
+        Assert.Single(rows, r => r.Kind == DiffKind.Added);
     }
 }

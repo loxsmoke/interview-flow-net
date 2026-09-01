@@ -84,18 +84,66 @@ Each section = one agent class: load prompt template (embedded resource, from `a
 
 > *Scaffold*: per-agent LLDs (prompt file, state inputs/outputs, post-processing) to be written as `docs/lld/agents/*.md` during implementation, mirroring `c:\dev\interview-flow\docs\lld\agents\`.
 
-## 5.7 Job-posting URL fetch (decided: LLM web-fetch fallback, no Playwright)
+## 5.7 Job-posting URL fetch (decided: structured-data first, LLM extraction last, no Playwright)
 
-If the pasted job posting matches `^https?://\S+$`:
+If the pasted job posting matches `^https?://\S+$`, `JobPostingFetcher.ResolveAsync`
+walks four steps and stops at the first that yields **≥ 200 chars** (the original's
+JS-rendered-page heuristic). Everything runs behind the **SSRF guard** (reject
+private / loopback / reserved / link-local IPs — ported from the original).
 
-1. **Plain `HttpClient` fetch** with text extraction, behind the **SSRF guard** (reject private / loopback / reserved / link-local IPs — port the original check).
-2. If extraction yields **< 200 chars** (the original's JS-rendered-page heuristic), **fall back to a one-shot LLM query** using the active provider's server-side web-fetch capability: "fetch this URL and return the job posting text verbatim" (low temperature, web tools enabled). This replaces the original's headless-Chromium (Playwright) fallback — no local browser dependency.
-3. If the fallback is unavailable or fails, show: "Couldn't extract the posting from this page — paste the text instead."
+1. **The board's own API**, when the host has one. Cleaner than the page every
+   time: no site chrome, and the employer is named outright.
+   - **Workday CXS JSON** (`WorkdayPosting`) — `*.myworkdayjobs.com` job pages are
+     client-rendered shells, but every tenant serves the same requisition as JSON:
+     `https://{tenant}.wdN.myworkdayjobs.com/{site}/job/{rest}` →
+     `…/wday/cxs/{tenant}/{site}/job/{rest}`. Tenant is the first host label; a
+     locale segment (`/en-US/`) ahead of the site id is dropped, and `/details/`
+     maps to the same `/job/` route. Rendered from `jobPostingInfo` (title,
+     location, timeType, jobReqId, postedOn) plus root-level `hiringOrganization`.
+   - **Greenhouse board API** (`GreenhousePosting`) — `…/{board}/jobs/{id}` →
+     `https://boards-api.greenhouse.io/v1/boards/{board}/jobs/{id}` (EU boards use
+     `boards-api.eu.…`; the embedded `?for=&token=` form maps too). The page is
+     server-rendered, so scraping it "works" — but it carries no JSON-LD, names
+     the employer only in `<title>`, and drags in "Back to jobs"/"Apply". The API
+     gives `title`, `company_name`, `location.name` and an entity-escaped HTML
+     `content` body.
+2. **Plain `HttpClient` fetch**, then a **block-aware strip** (`HtmlText.PageToText`):
+   block tags become newlines and `<li>` becomes a bullet, so a posting keeps its
+   headings and lists. The original's flat `_html_to_text` (kept as
+   `JobPostingFetcher.HtmlToText`, the parity reference) collapses an entire
+   posting onto one line — that is what it used to store.
+3. **Structured data inside that same HTML** (`StructuredPosting`) — schema.org
+   `JobPosting` JSON-LD first, then OpenGraph `og:title`/`og:description`. This
+   costs no extra request and no provider call. It matters because the tag strip
+   discards `<script>` blocks, which is exactly where a JS-rendered page keeps
+   its posting: the captured Workday fixture strips to **zero** characters yet
+   carries the full 4.8 k-char posting as JSON-LD.
+4. **One LLM query**, low temperature. With the page in hand the model is asked to
+   *extract* the posting from the raw HTML (capped at 160 k chars, web tools off,
+   `NO_POSTING` sentinel for a page that has none) — **not** to fetch it. Asking a
+   model to retrieve a named URL does not work: no provider here exposes a
+   reliable fetch-this-URL tool, and OpenAI's `web_search_preview` answers such a
+   request with zero tool calls. Only when the request itself failed (no HTML at
+   all) does it fall back to asking for a server-side fetch.
+5. If everything fails: "Couldn't extract the posting from this page — paste the
+   text instead."
+
+Company/Position for Setup come from whichever step resolved: the board API's own
+fields, JSON-LD `title`/`hiringOrganization.name`, or — as the last resort —
+`StructuredPosting.CompanyFromPage`, which reads `og:site_name` and then the
+document title's "… at {Company}" tail (Greenhouse writes
+"Job Application for Staff Software Engineer at CareDx, Inc."). Metadata is read
+even when the page body scrapes fine, since that is often the only place the
+employer is named.
 
 Caveats to encode:
-- Requires a configured cloud provider; **Ollama** has no server-side fetch (its tool loop fetches locally over plain HTTP — the same thing that just failed), so Ollama users get behavior 3 directly.
-- The fallback query has a real (small) token cost — show it in the fetch progress UI; *whether it's recorded into any per-section cost field is TBD (leaning: display-only, not persisted — the data schema has no setup-section cost fields).*
-- Provider blocks (e.g. LinkedIn refusing fetchers) still fail → behavior 3.
+- **Ollama** skips step 4 entirely: its tool loop fetches locally over plain HTTP
+  (the same thing that just failed) and a page of markup overruns a local model's
+  context. Steps 1–3 are what cover JS-rendered pages for local setups.
+- The step-4 query has a real (small) token cost — show it in the fetch progress
+  UI; *whether it's recorded into any per-section cost field is TBD (leaning:
+  display-only, not persisted — the data schema has no setup-section cost fields).*
+- Provider blocks (e.g. LinkedIn refusing fetchers) still fail → behavior 5.
 
 ## 5.8 Observability (decided: OpenTelemetry)
 

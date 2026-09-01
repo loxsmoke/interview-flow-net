@@ -5,7 +5,7 @@ Source of truth: `c:\dev\interview-flow\app\static\index.html` (React SPA, ~4,56
 ## 3.0 Global shell & theme
 
 - Layout: fixed **240 px sidebar** + main content filling the rest (content padding ≈ 32 px top/left/right).
-- Window: 1400×900 default, min 900×600. Title: `"{Company} — {Position} | Interview Flow v{version}"` when a workflow is selected, else `"Interview Flow v{version}"`.
+- Window: 1400×900 default, min 900×600. Title: `"Interview Flow — v{version} — {Company}"` when a workflow is selected, else `"Interview Flow — v{version}"` — the original is a browser page titled just `"Interview Flow"`.
 - Dark theme only:
   - Page background `#020617` (slate-950), text `#f1f5f9` (slate-100)
   - Panels `#0f172a` (slate-900) with `#1e293b` (slate-800) borders, `rounded-xl` (12 px radius)
@@ -21,7 +21,7 @@ Top → bottom:
 
 1. **Header row**: ⓘ About button · gradient wordmark "Interview Flow" (indigo→purple text gradient) · ⚙ Config button (pulses amber when no provider is configured). Subtitle "AI interview prep". When a company is selected: company name + "Currently selected company".
 2. **Step list** — 12 rows. Each: 32×32 rounded icon tile + label + one-line description.
-   - Tile states: idle `#1e293b`; active gradient `135deg #6366f1→#8b5cf6`; done `✓` in `#22c55e`; running → spinning SVG; failed `bg red-900/80` showing `!`.
+   - Tile states: idle `#1e293b`; active gradient `135deg #6366f1→#8b5cf6`; done `✓` in `#22c55e`; running → the glyph is replaced by a spinning arc (`Path.spinner`, one turn/second, the original's `animate-spin`); failed `bg red-900/80` showing `!`. The tile's tooltip names the state (Running/Queued/Failed) like the original's title/aria-label.
    - Queued: 12 px amber `⌛` badge, top-right of tile.
    - Active row: background slate-800 + 2 px right border `#6366f1`.
    - All non-`setup` rows locked at 40 % opacity until a workflow exists.
@@ -37,7 +37,9 @@ Avalonia notes: `ItemsControl` of `StepNavItem` control; badges as adorner-style
 - **New application** button.
 - Collapsible "Previous applications (N)" (Expander): each row — Select · `Company — Position` + "N steps done" + updated date · Clone · Delete. Clone and Delete get confirm dialogs; Clone names the copy `Company | copy N`.
 - Two-column inputs: Company Name, Position — with hint that text after `|` is a stripped comment.
-- Full-height Job Posting textarea. If pasted text is a bare `http(s)://` URL, the app fetches the posting: plain HTTP first (SSRF guard rejecting private/loopback IPs), then an LLM web-fetch fallback via the active provider when extraction is thin — see 05 §5.7. Fetch progress and fallback cost shown inline; on failure, a "paste the text instead" message.
+- Job Posting label with a **⤓ Fetch from URL** button to its right, above a full-height textarea. The button is enabled only when the textarea holds a bare `http(s)://` URL, shows "Fetching…" while it runs, and **stays on Setup** — it neither saves nor navigates, so the user can check the text and the filled-in names first. **Save & Continue** resolves a still-unfetched URL the same way before moving on, and stays put if that fails.
+- Fetching runs the four-step resolution in 05 §5.7 (Workday CXS JSON · plain HTTP behind the SSRF guard · JSON-LD/OpenGraph in that HTML · one LLM extraction). Progress and fallback cost show inline; on failure, the "paste the text instead" message and the URL is left untouched.
+- When the source names the role and employer (Workday CXS, schema.org JSON-LD, `og:site_name`/`og:title`), **Company** and **Position** are filled from it — but only when empty. A value the user typed is never overwritten; the status line says which fields were filled and which were left as typed.
 
 ## 3.3 Resume screen
 
@@ -55,7 +57,7 @@ Avalonia notes: `ItemsControl` of `StepNavItem` control; badges as adorner-style
 - Header: title (+ 🌐 badge on web-search steps) + **cost badge** (`$0.42 query cost` / `No query cost`; tooltip: model, duration, local run time) + description.
 - Buttons: split **Run AI** + queue dropdown caret · **Continue →**.
   - Run label cycles: `Run AI` → `Run AI Later` (something else running) → `Don't Run AI` (this one queued) → `Stop AI` / `Stopping AI...` (running).
-  - Queue dropdown: checkbox list of the 8 queueable sections; currently-running one locked.
+  - Queue dropdown: checkbox list of the 8 queueable sections; currently-running one locked (amber `running` tag). Ticks are a *pending* selection seeded from the live queue on open — nothing runs until **Apply**, which enqueues newly ticked sections and unqueues cleared ones and closes the dropdown. Left button flips **Select all** / **Clear all**.
 - While running: book-scroll animation (320×80) + **LiveTracePanel**.
 - Otherwise: error block if failed (message + collapsible detail + Copy button), and the markdown report in a slate-900 rounded scroll pane (24 px padding).
 
@@ -81,6 +83,7 @@ Two states:
 
 - Header + cost badge. Buttons: split **Run AI** + queue caret · **Use AI Resume** (violet) · **Chat with Coach** (cyan) · **Continue →**.
 - Optional collapsible cyan **Resume Coach Chat** panel (max height 50 % of viewport; captions "You"/"Coach") — same chat mechanics as Mock Interview.
+- While the review runs: indeterminate progress bar under the header and the **live trace** in place of the split — the same running indication as the §3.4 agent screens (the original hides the split behind `isRunning && liveTrace`). A failed run shows the error block there too.
 - Main area: **draggable splitter** — left pane "AI ANALYSIS & SUGGESTIONS" (markdown report), right pane "Your Resume" with tabs **Edit / Preview / Comparison**.
   - Splitter clamps 20–80 %; container under 640 px wide flips to vertical stacking (Avalonia: `GridSplitter` + width-triggered layout swap).
   - **Comparison** tab: LCS line diff of saved vs edited tagged text — deleted rows red (`bg red-950/70, text red-300`, `−` prefix), added rows green (`bg green-950/70, text green-300`, `+` prefix), unchanged slate-400; monospace, 12 px, line-height 20 px.

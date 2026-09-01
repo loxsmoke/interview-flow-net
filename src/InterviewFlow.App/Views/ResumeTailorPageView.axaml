@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -36,8 +36,19 @@
       </StackPanel>
     </DockPanel>
 
-    <TextBlock Grid.Row="1" Text="{Binding UpdateError}" FontSize="12" Foreground="#F87171"
-               TextWrapping="Wrap" Margin="0,0,0,8" IsVisible="{Binding HasUpdateError}" />
+    <StackPanel Grid.Row="1" Spacing="8" Margin="0,0,0,8">
+      <!-- Same running indication as the other agent screens (§3.4/§3.7). -->
+      <ProgressBar IsIndeterminate="True" Height="4" IsVisible="{Binding Run.IsRunningHere}"
+                   Foreground="{StaticResource PrimaryGradientBrush}" Background="#1E293B" />
+      <TextBlock Text="{Binding UpdateError}" FontSize="12" Foreground="#F87171"
+                 TextWrapping="Wrap" IsVisible="{Binding HasUpdateError}" />
+      <Border IsVisible="{Binding Run.HasError}"
+              Background="#431407" BorderBrush="#9A3412" BorderThickness="1"
+              CornerRadius="8" Padding="16">
+        <TextBlock Text="{Binding Run.ErrorMessage}" FontSize="13" TextWrapping="Wrap"
+                   Foreground="{StaticResource SearchWarningTextBrush}" />
+      </Border>
+    </StackPanel>
 
     <!-- Coach chat (collapsible, cyan) -->
     <Border Grid.Row="2" IsVisible="{Binding ShowCoach}" Margin="0,0,0,12"
@@ -51,8 +62,13 @@
       </DockPanel>
     </Border>
 
+    <Grid Grid.Row="3">
+      <ScrollViewer IsVisible="{Binding Run.IsRunningHere}">
+        <controls:LiveTracePanel DataContext="{Binding Run.Trace}" />
+      </ScrollViewer>
+
     <!-- Split: analysis | editor -->
-    <Grid Grid.Row="3" ColumnDefinitions="*,8,*" x:Name="SplitGrid">
+    <Grid ColumnDefinitions="*,8,*" x:Name="SplitGrid" IsVisible="{Binding !Run.IsRunningHere}">
       <Border Grid.Column="0" Background="{StaticResource PanelBackgroundBrush}"
               BorderBrush="{StaticResource PanelBorderBrush}" BorderThickness="1"
               CornerRadius="12" Padding="16">
@@ -96,7 +112,15 @@
               </ScrollViewer>
             </TabItem>
             <TabItem Header="Comparison">
-              <ScrollViewer>
+              <Grid>
+                <TextBlock IsVisible="{Binding !HasDiff}" TextWrapping="Wrap" MaxWidth="360"
+                           Text="No differences yet — run the tailor, hit &quot;Use AI Resume&quot;, or edit your resume to see a comparison."
+                           FontSize="13" Foreground="#64748B" TextAlignment="Center"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <DockPanel IsVisible="{Binding HasDiff}">
+                <TextBlock DockPanel.Dock="Top" Text="{Binding DiffCaption}" FontSize="11"
+                           Foreground="{StaticResource TextMutedBrush}" Margin="6,0,0,8" />
+                <ScrollViewer>
                 <ItemsControl ItemsSource="{Binding DiffRows}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="diff:DiffRow">
@@ -111,11 +135,14 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-              </ScrollViewer>
+                </ScrollViewer>
+                </DockPanel>
+              </Grid>
             </TabItem>
           </TabControl>
         </DockPanel>
       </Border>
+    </Grid>
     </Grid>
 
     <!-- Footer -->

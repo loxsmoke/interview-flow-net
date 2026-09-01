@@ -24,6 +24,7 @@ The architectural template is **openlogi-net** (`c:\dev\openlogi-net`) — a .NE
 | [07-queue-and-streaming.md](07-queue-and-streaming.md) | Background queue semantics and event pub/sub |
 | [08-configuration.md](08-configuration.md) | Settings storage, secrets, `.env` migration, data-folder migration wizard |
 | [09-porting-plan.md](09-porting-plan.md) | Milestones, parity checklist, risks |
+| [10-building.md](10-building.md) | Prerequisites, dev loop, tests, packaging for Windows + macOS |
 | [adr/](adr/) | Architecture decision records (open and resolved) |
 
 ## Decisions (see `adr/`)

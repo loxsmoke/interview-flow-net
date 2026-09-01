@@ -80,10 +80,18 @@ public static class Paths
             // Inaccessible working directory — fall through to the exe dir.
         }
 
-        if (!string.IsNullOrEmpty(cwd))
-            yield return Path.Combine(cwd, "data");
+        if (IsUsableWorkingDirectory(cwd))
+            yield return Path.Combine(cwd!, "data");
         yield return Path.Combine(ExecutableDir(), "data");
     }
+
+    /// <summary>
+    /// A .app bundle launched from Finder inherits "/" as its working directory,
+    /// so the portable-mode probe there would test "/data" — a path that belongs
+    /// to no one and is not ours to adopt. Only a real subdirectory counts.
+    /// </summary>
+    internal static bool IsUsableWorkingDirectory(string? cwd) =>
+        !string.IsNullOrEmpty(cwd) && Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(cwd)) is not null;
 
     /// <summary>Case-insensitive on Windows, exact elsewhere.</summary>
     public static bool SamePath(string a, string b)

@@ -71,6 +71,22 @@
     </Style.Animations>
   </Style>
 
+  <!-- Sidebar "this section is running" spinner (§3.1): the original's
+       animate-spin arc, one turn per second, replacing the tile glyph. -->
+  <Style Selector="Path.spinner">
+    <Setter Property="RenderTransform" Value="rotate(0deg)" />
+    <Style.Animations>
+      <Animation Duration="0:0:1" IterationCount="INFINITE" Easing="LinearEasing">
+        <KeyFrame Cue="0%">
+          <Setter Property="RotateTransform.Angle" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="RotateTransform.Angle" Value="360" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
   <!-- Amber cog pulse while no AI provider is configured (§3.1). The original
        also scales 1→1.25; opacity-only is an accepted approximation (transform
        keyframes aren't animatable from styles). -->

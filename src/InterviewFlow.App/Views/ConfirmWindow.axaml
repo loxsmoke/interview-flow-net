@@ -4,7 +4,7 @@
         Width="420" SizeToContent="Height"
         WindowStartupLocation="CenterOwner"
         CanResize="False"
-        SystemDecorations="None"
+        WindowDecorations="None"
         TransparencyLevelHint="Transparent"
         Background="Transparent">
   <!-- Modal confirm (docs/03-ui-spec.md §3.12): dark rounded panel, Cancel +

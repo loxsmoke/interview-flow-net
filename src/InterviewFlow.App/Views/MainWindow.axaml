@@ -9,6 +9,7 @@
         x:Class="InterviewFlow.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="{Binding WindowTitle}"
+        Icon="/Assets/icon.ico"
         Width="1400" Height="900"
         MinWidth="900" MinHeight="600"
         Background="{StaticResource PageBackgroundBrush}">

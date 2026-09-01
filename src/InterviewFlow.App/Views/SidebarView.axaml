@@ -103,10 +103,22 @@
                     <Grid Grid.Column="0">
                       <Border Classes="tile"
                               Classes.active="{Binding IsActive}"
-                              Classes.failed="{Binding IsFailed}">
-                        <TextBlock Text="{Binding TileGlyph}" FontSize="15"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Classes.doneGlyph="{Binding IsDone}" />
+                              Classes.failed="{Binding IsFailed}"
+                              ToolTip.Tip="{Binding StatusLabel}"
+                              ToolTip.IsEnabled="{Binding HasStatus}">
+                        <Panel>
+                          <TextBlock Text="{Binding TileGlyph}" FontSize="15"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                     Classes.doneGlyph="{Binding IsDone}"
+                                     IsVisible="{Binding ShowGlyph}" />
+                          <!-- Running: the original's spinning arc, in place of the glyph. -->
+                          <Path Classes="spinner" Data="M21,12 A9,9 0 1 1 14.781,3.44"
+                                Width="17" Height="17" Stretch="Uniform"
+                                Stroke="{StaticResource TextPrimaryBrush}" StrokeThickness="2.4"
+                                StrokeLineCap="Round" StrokeJoin="Round"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsVisible="{Binding IsRunning}" />
+                        </Panel>
                       </Border>
                       <TextBlock Text="⌛" FontSize="12"
                                  HorizontalAlignment="Right" VerticalAlignment="Top"

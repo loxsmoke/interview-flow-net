@@ -59,7 +59,7 @@ public sealed class AnthropicStreamingTests
         var provider = new AnthropicProvider("sk-test", new HttpClient(handler));
 
         var events = new List<AgentEvent>();
-        await foreach (var e in provider.StreamAsync("hi", "sys", "claude-sonnet-4-6", 0.5, useWeb: false))
+        await foreach (var e in provider.StreamAsync("hi", "sys", "claude-sonnet-4-6", 0.5, useWeb: false, TestContext.Current.CancellationToken))
             events.Add(e);
 
         Assert.Equal(["Hello ", "world"], events.OfType<ReceiveEvent>().Select(e => e.Text));
@@ -92,7 +92,7 @@ public sealed class AnthropicStreamingTests
         var provider = new AnthropicProvider("sk-test", new HttpClient(handler));
 
         var events = new List<AgentEvent>();
-        await foreach (var e in provider.StreamAsync("hi", "", "m", null, useWeb: true))
+        await foreach (var e in provider.StreamAsync("hi", "", "m", null, useWeb: true, TestContext.Current.CancellationToken))
             events.Add(e);
 
         var tool = Assert.Single(events.OfType<ToolUseEvent>());
@@ -113,7 +113,7 @@ public sealed class AnthropicStreamingTests
         var provider = new AnthropicProvider("sk-test", new HttpClient(handler));
 
         var events = new List<AgentEvent>();
-        await foreach (var e in provider.StreamAsync("hi", "", "m", null, useWeb: false))
+        await foreach (var e in provider.StreamAsync("hi", "", "m", null, useWeb: false, TestContext.Current.CancellationToken))
             events.Add(e);
 
         Assert.Contains(events, e => e is RateLimitRetryEvent);          // countdown emitted
@@ -144,7 +144,7 @@ public sealed class OpenAiStreamingTests
         var provider = new OpenAiProvider("sk-test", new HttpClient(handler));
 
         var events = new List<AgentEvent>();
-        await foreach (var e in provider.StreamAsync("q", "s", "gpt-4o", 0.7, useWeb: false))
+        await foreach (var e in provider.StreamAsync("q", "s", "gpt-4o", 0.7, useWeb: false, TestContext.Current.CancellationToken))
             events.Add(e);
 
         Assert.Equal(["Hi", "!"], events.OfType<ReceiveEvent>().Select(e => e.Text));
@@ -170,7 +170,7 @@ public sealed class OpenAiStreamingTests
         var provider = new OpenAiProvider("sk-test", new HttpClient(handler));
 
         var events = new List<AgentEvent>();
-        await foreach (var e in provider.StreamAsync("q", "s", "gpt-4o", null, useWeb: true))
+        await foreach (var e in provider.StreamAsync("q", "s", "gpt-4o", null, useWeb: true, TestContext.Current.CancellationToken))
             events.Add(e);
 
         var tools = events.OfType<ToolUseEvent>().ToList();
@@ -200,7 +200,7 @@ public sealed class OllamaStreamingTests
         var provider = new OllamaProvider("http://localhost:11434", numCtx: "8192", http: new HttpClient(handler));
 
         var events = new List<AgentEvent>();
-        await foreach (var e in provider.StreamAsync("q", "sys", "llama3.2", 0.7, useWeb: false))
+        await foreach (var e in provider.StreamAsync("q", "sys", "llama3.2", 0.7, useWeb: false, TestContext.Current.CancellationToken))
             events.Add(e);
 
         Assert.Equal(["He", "y"], events.OfType<ReceiveEvent>().Select(e => e.Text));
@@ -233,7 +233,7 @@ public sealed class RouterTests
         var events = new List<AgentEvent>();
         await foreach (var e in ProviderRouter.StreamQueryAsync(
             config, "user prompt", new QueryOptions("system prompt"), "company-research",
-            http: new HttpClient(handler)))
+            ct: TestContext.Current.CancellationToken, http: new HttpClient(handler)))
         {
             events.Add(e);
         }

@@ -427,3 +427,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# macOS bundle output (tools/publish-macos.sh)
+dist/
+artifacts/

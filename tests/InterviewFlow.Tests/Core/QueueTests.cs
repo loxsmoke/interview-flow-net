@@ -221,7 +221,7 @@ public sealed class QueueWorkerTests
         var research = queue.Enqueue("s1", "research", "R");
         queue.Enqueue("s1", "pitch", "P");
         worker.EnsureRunning();
-        await started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 
         queue.Cancel(research.Id);
         await WaitForDrainAsync(worker);

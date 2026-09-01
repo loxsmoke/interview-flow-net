@@ -1,4 +1,5 @@
 using InterviewFlow.App.ViewModels;
+using Pages = InterviewFlow.App.ViewModels.Pages;
 using InterviewFlow.Core.Config;
 using InterviewFlow.Core.Models;
 
@@ -82,7 +83,37 @@ public sealed class ShellLogicTests : IDisposable
         Assert.True(shell.Steps.First(s => s.Key == "setup").IsDone);
         Assert.True(shell.Steps.First(s => s.Key == "interview_intel").ShowTech); // "software engineer"
         Assert.Equal(2, shell.ProgressCompleted);
-        Assert.Contains("Acme", shell.WindowTitle);
+        Assert.Equal($"Interview Flow — v{shell.Version} — Acme", shell.WindowTitle);
+    }
+
+    [Fact]
+    public void Window_title_is_app_name_version_then_company()
+    {
+        var shell = NewShell();
+        Assert.Equal($"Interview Flow — v{shell.Version}", shell.WindowTitle);
+
+        var state = new InterviewState { CompanyName = "Acme", Position = "Staff Engineer" };
+        shell.Store.SaveState(state);
+        shell.SelectWorkflow(state.Id);
+        Assert.Equal($"Interview Flow — v{shell.Version} — Acme", shell.WindowTitle);
+    }
+
+    [Fact]
+    public void Tech_badge_follows_the_position_typed_on_setup_before_it_is_saved()
+    {
+        var shell = NewShell();
+        var setup = Assert.IsType<Pages.SetupPageViewModel>(shell.CurrentPage);
+        var intel = shell.Steps.First(s => s.Key == "interview_intel");
+        Assert.False(intel.ShowTech);
+        Assert.False(setup.TechDetected);
+
+        setup.Position = "Backend Developer";
+        Assert.True(setup.TechDetected);
+        Assert.True(intel.ShowTech); // sidebar updates live, nothing saved yet
+
+        setup.Position = "Account Manager";
+        Assert.False(setup.TechDetected);
+        Assert.False(intel.ShowTech);
     }
 
     [Fact]

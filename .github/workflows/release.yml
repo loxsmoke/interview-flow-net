@@ -195,7 +195,7 @@ jobs:
           Write-Host "Trimmed build started and stayed up."
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: package-${{ matrix.rid }}
           path: artifacts/*
@@ -215,7 +215,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
           merge-multiple: true

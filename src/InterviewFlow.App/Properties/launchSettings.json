@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "InterviewFlow.App": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\dev\\interview-flow-net"
+    }
+  }
+}

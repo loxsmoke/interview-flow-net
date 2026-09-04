@@ -24,9 +24,10 @@ public sealed record JobPostingResult(
 /// (&#8805; 200 chars, the original's JS-rendered-page heuristic):
 /// <list type="number">
 ///   <item>A job board's own API, when the URL is one it serves: Workday CXS
-///         JSON, Greenhouse's board API.</item>
+///         JSON, Greenhouse's board API, the iCIMS frame document.</item>
 ///   <item>Plain HTTP fetch behind the SSRF guard + a block-aware strip that
-///         keeps paragraphs and bullets.</item>
+///         keeps paragraphs and bullets. A page that only embeds the posting
+///         in a same-host frame is followed into that frame first.</item>
 ///   <item>Structured data already in that HTML — JSON-LD, then OpenGraph.</item>
 ///   <item>One LLM call: extraction from the fetched HTML when we have it,
 ///         a server-side web fetch only when the request itself failed.</item>
@@ -54,6 +55,9 @@ public static partial class JobPostingFetcher
 
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRe();
+
+    [GeneratedRegex("""<iframe\b[^>]*?\ssrc\s*=\s*["'](?<src>[^"']+)["']""", RegexOptions.IgnoreCase)]
+    private static partial Regex FrameSrcRe();
 
     /// <summary>True when the pasted text is a bare http(s) URL (main.py:222).</summary>
     public static bool LooksLikeUrl(string input) => BareUrlRe().IsMatch(input.Trim());
@@ -145,18 +149,29 @@ public static partial class JobPostingFetcher
         var html = await GetStringAsync(client, input, "text/html", ct);
         var structured = html.Length > 0 ? StructuredPosting.Extract(html) : PostingDetails.Empty;
         var text = HtmlText.PageToText(html);
-        if (text.Length >= ThinTextThreshold)
+
+        // 2a. A page that only embeds the posting: no structured data of its
+        //     own, and a same-host frame holding the real document (iCIMS wraps
+        //     postings in the employer's corporate site this way). The wrapper's
+        //     menus strip to well past the threshold, so the frame has to be
+        //     tried before the page's text is trusted. Its result wins when it
+        //     is structured, or when it simply says more than the wrapper — a
+        //     frame that says less is an application form beside a real posting.
+        if (structured.IsEmpty && SameHostFrameUrl(html, input) is { } frameUrl)
         {
-            var named = structured with { Text = text };
-            if (named.Company.Length == 0)
-                named = named with { Company = StructuredPosting.CompanyFromPage(html) };
-            return Resolved(named);
+            var frameHtml = await GetStringAsync(client, frameUrl, "text/html", ct);
+            var frameStructured = frameHtml.Length > 0 ? StructuredPosting.Extract(frameHtml) : PostingDetails.Empty;
+            if (PageDetails(frameHtml, HtmlText.PageToText(frameHtml), frameStructured) is { } framed
+                && (!frameStructured.IsEmpty || framed.Text.Length > text.Length))
+            {
+                return Resolved(framed);
+            }
         }
 
-        // 3. Thin strip → the page is JS-rendered, but the posting is usually
-        //    still in the shell as JSON-LD or OpenGraph metadata.
-        if (structured.Text.Length >= ThinTextThreshold)
-            return Resolved(structured);
+        // 2b. The page's own text; 3. thin strip → the page is JS-rendered, but
+        //     the posting is usually still in the shell as JSON-LD or OpenGraph.
+        if (PageDetails(html, text, structured) is { } fromPage)
+            return Resolved(fromPage);
 
         // 4. Last resort: one LLM call.
         var provider = ProviderRouter.ResolveProvider(config);
@@ -189,24 +204,70 @@ public static partial class JobPostingFetcher
     }
 
     /// <summary>
+    /// Steps 2 and 3 for one fetched document: its text when that clears the
+    /// threshold (named from the metadata, since the body rarely names the
+    /// employer), else its structured data when that does, else null.
+    /// </summary>
+    private static PostingDetails? PageDetails(string html, string text, PostingDetails structured)
+    {
+        if (text.Length >= ThinTextThreshold)
+        {
+            var named = structured with { Text = text };
+            return named.Company.Length > 0
+                ? named
+                : named with { Company = StructuredPosting.CompanyFromPage(html) };
+        }
+
+        return structured.Text.Length >= ThinTextThreshold ? structured : null;
+    }
+
+    /// <summary>
+    /// The first frame on the page whose source is on the page's own host, or
+    /// null. Third-party frames (tag managers, analytics) are skipped: a
+    /// same-host frame is where a wrapper page keeps the posting, and staying
+    /// on the host keeps the request inside the SSRF check already made.
+    /// </summary>
+    public static string? SameHostFrameUrl(string html, string pageUrl)
+    {
+        if (html.Length == 0 || !Uri.TryCreate(pageUrl, UriKind.Absolute, out var page))
+            return null;
+
+        foreach (Match match in FrameSrcRe().Matches(html))
+        {
+            var src = WebUtility.HtmlDecode(match.Groups["src"].Value).Trim();
+            if (src.Length == 0 || !Uri.TryCreate(page, src, out var frame))
+                continue;
+            if (frame.Scheme != Uri.UriSchemeHttp && frame.Scheme != Uri.UriSchemeHttps)
+                continue;
+            if (!frame.Host.Equals(page.Host, StringComparison.OrdinalIgnoreCase)
+                || frame.AbsoluteUri == page.AbsoluteUri)
+                continue;
+            return frame.AbsoluteUri;
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// Board-API handlers, tried in turn. A miss (unknown host, dead id, empty
     /// body) falls through to the page fetch rather than failing the resolve.
     /// </summary>
     private static async Task<JobPostingResult?> FromBoardApiAsync(
         HttpClient client, string url, CancellationToken ct)
     {
-        (string? Endpoint, Func<string, PostingDetails?> Parse)[] boards =
+        (string? Endpoint, string Accept, Func<string, PostingDetails?> Parse)[] boards =
         [
-            (WorkdayPosting.CxsUrl(url), WorkdayPosting.ParseCxsJson),
-            (GreenhousePosting.ApiUrl(url), GreenhousePosting.ParseJobJson),
+            (WorkdayPosting.CxsUrl(url), "application/json", WorkdayPosting.ParseCxsJson),
+            (GreenhousePosting.ApiUrl(url), "application/json", GreenhousePosting.ParseJobJson),
+            (IcimsPosting.FrameUrl(url), "text/html", IcimsPosting.ParseFrameHtml),
         ];
 
-        foreach (var (endpoint, parse) in boards)
+        foreach (var (endpoint, accept, parse) in boards)
         {
             if (endpoint is null)
                 continue;
-            var json = await GetStringAsync(client, endpoint, "application/json", ct);
-            if (json.Length > 0 && parse(json) is { } posting
+            var body = await GetStringAsync(client, endpoint, accept, ct);
+            if (body.Length > 0 && parse(body) is { } posting
                 && posting.Text.Length >= ThinTextThreshold)
             {
                 return Resolved(posting);

@@ -210,7 +210,10 @@ public static partial class StructuredPosting
             Text(location, "address", "addressRegion"),
             Text(location, "address", "addressCountry"),
         };
-        return string.Join(", ", parts.Where(p => p.Length > 0));
+        // iCIMS fills address fields it doesn't have with the literal
+        // "UNAVAILABLE"; a placeholder is not a place.
+        return string.Join(", ", parts.Where(p =>
+            p.Length > 0 && !p.Equals("UNAVAILABLE", StringComparison.OrdinalIgnoreCase)));
     }
 
     private static void AddLine(List<string> lines, string label, string value)

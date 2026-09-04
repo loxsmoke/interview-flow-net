@@ -107,11 +107,28 @@ private / loopback / reserved / link-local IPs — ported from the original).
      the employer only in `<title>`, and drags in "Back to jobs"/"Apply". The API
      gives `title`, `company_name`, `location.name` and an entity-escaped HTML
      `content` body.
+   - **iCIMS frame document** (`IcimsPosting`) — `https://{tenant}.icims.com/jobs/{id}/…`
+     serves the employer's corporate site wrapped around an empty frame; the
+     posting is the same URL with `in_iframe=1`, carried as JSON-LD (title,
+     `hiringOrganization`, location — iCIMS pads the address with the literal
+     `UNAVAILABLE`, which the location renderer drops). The wrapper strips to
+     well over 1 k chars of site navigation, so without this the plain fetch
+     accepted the menus as the posting (the Cotiviti regression). A frame
+     document with no JSON-LD is a miss and falls through.
 2. **Plain `HttpClient` fetch**, then a **block-aware strip** (`HtmlText.PageToText`):
    block tags become newlines and `<li>` becomes a bullet, so a posting keeps its
    headings and lists. The original's flat `_html_to_text` (kept as
    `JobPostingFetcher.HtmlToText`, the parity reference) collapses an entire
    posting onto one line — that is what it used to store.
+   - **Same-host frame follow** (`JobPostingFetcher.SameHostFrameUrl`): when the
+     page has no structured data and holds an `<iframe>` on its own host, that
+     frame is fetched once (same host, so inside the SSRF check already made)
+     and rendered by the same rules. Its result wins when it is structured, or
+     when its text is simply longer than the page's — a shorter frame is an
+     application form beside a real posting, and the page wins. Third-party
+     frames (tag managers, analytics) are ignored. Generic on purpose: any ATS
+     that wraps its posting in a corporate site this way resolves without a
+     handler of its own.
 3. **Structured data inside that same HTML** (`StructuredPosting`) — schema.org
    `JobPosting` JSON-LD first, then OpenGraph `og:title`/`og:description`. This
    costs no extra request and no provider call. It matters because the tag strip

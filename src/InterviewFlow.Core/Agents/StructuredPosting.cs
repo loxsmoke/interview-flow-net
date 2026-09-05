@@ -41,19 +41,17 @@ public static partial class StructuredPosting
     {
         foreach (Match block in JsonLdBlockRe().Matches(html))
         {
-            var raw = System.Net.WebUtility.HtmlDecode(block.Groups["json"].Value).Trim();
+            var raw = block.Groups["json"].Value.Trim();
             if (raw.Length == 0)
                 continue;
 
-            JsonDocument doc;
-            try
-            {
-                doc = JsonDocument.Parse(raw);
-            }
-            catch (JsonException)
-            {
+            // A <script> body is not entity-decoded by the browser, so the JSON
+            // is taken as written: Jibe (iCIMS) postings carry "&quot;" inside
+            // description strings, and decoding those first breaks the JSON.
+            // Decoding is the fallback, for a generator that escaped the block.
+            var doc = ParseJson(raw) ?? ParseJson(System.Net.WebUtility.HtmlDecode(raw));
+            if (doc is null)
                 continue;
-            }
 
             using (doc)
             {
@@ -71,6 +69,18 @@ public static partial class StructuredPosting
         return PostingDetails.Empty;
     }
 
+    private static JsonDocument? ParseJson(string json)
+    {
+        try
+        {
+            return JsonDocument.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     /// <summary>
     /// The employer named by the page shell, or "". og:site_name first, then the
     /// document title, which job boards write as "… at {Company}" (Greenhouse:
@@ -78,8 +88,11 @@ public static partial class StructuredPosting
     /// </summary>
     public static string CompanyFromPage(string html)
     {
-        if (MetaValue(html, "site_name") is { Length: > 0 } site)
+        if (MetaValue(html, "site_name") is { Length: > 0 } site
+            && !site.Equals(MetaValue(html, "title"), StringComparison.OrdinalIgnoreCase))
+        {
             return site;
+        }
 
         var title = TitleRe().Match(html) is { Success: true } m
             ? System.Net.WebUtility.HtmlDecode(m.Groups["title"].Value).Trim()
@@ -129,8 +142,12 @@ public static partial class StructuredPosting
 
         if (description.Length == 0)
             return PostingDetails.Empty;
+        // Jibe writes og:site_name as a copy of og:title — a site name that is
+        // the page title names no employer.
+        if (site.Equals(title, StringComparison.OrdinalIgnoreCase))
+            site = "";
         var text = title.Length == 0 ? description : $"{title}\n\n{description}";
-        return new PostingDetails(text, title, site.Length > 0 ? site : CompanyFromPage(html));
+        return new PostingDetails(text, title, site.Length > 0 ? site : CompanyFromPage(html), Teaser: true);
     }
 
     /// <summary>A JSON-LD document may be an object, an array, or an @graph.</summary>

@@ -13,9 +13,16 @@ namespace InterviewFlow.Core.Agents;
 /// </summary>
 public static partial class HtmlText
 {
-    [GeneratedRegex(@"<(script|style|noscript|svg|head)[^>]*>.*?</\1>",
+    [GeneratedRegex(@"<(script|style|noscript|svg)\b[^>]*>.*?</\1>",
         RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex NonContentRe();
+
+    // Removed in a second pass, once the scripts are gone: a script that quotes
+    // an HTML e-mail template holds a literal "</head>" (Jibe's i18n bundle),
+    // which would end the head early and leak the rest of the script as text.
+    [GeneratedRegex(@"<head\b[^>]*>.*?</head>",
+        RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex HeadRe();
 
     [GeneratedRegex("<[^>]+>")]
     private static partial Regex TagsRe();
@@ -36,7 +43,7 @@ public static partial class HtmlText
     /// handler that hits the site's own API avoids that, this is the fallback.
     /// </summary>
     public static string PageToText(string html) =>
-        html.Length == 0 ? "" : Convert(NonContentRe().Replace(html, "\n"));
+        html.Length == 0 ? "" : Convert(HeadRe().Replace(NonContentRe().Replace(html, "\n"), "\n"));
 
     private static string Convert(string html)
     {

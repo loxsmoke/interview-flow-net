@@ -129,12 +129,27 @@ private / loopback / reserved / link-local IPs — ported from the original).
      frames (tag managers, analytics) are ignored. Generic on purpose: any ATS
      that wraps its posting in a corporate site this way resolves without a
      handler of its own.
+   - **A full JSON-LD `JobPosting` beats the stripped text.** The strip of a
+     client-rendered board is the site's menus, and those clear 200 chars with
+     ease (Jibe, `*.jibeapply.com` — iCIMS's hosted career sites — strips to
+     1.7 k chars of GitHub's navigation). The JSON-LD is the posting the site
+     hands to search engines, chrome-free, so when it clears the threshold it is
+     the result and the page text is not consulted. An OpenGraph description is
+     a teaser (`PostingDetails.Teaser`) and never outranks page text.
+   - The strip removes `<script>`/`<style>`/`<noscript>`/`<svg>` **before**
+     `<head>`: Jibe's i18n bundle quotes an HTML e-mail template, so a literal
+     `</head>` sits inside a script, and a single pass ended the head there and
+     leaked 230 k chars of translation strings as the posting.
 3. **Structured data inside that same HTML** (`StructuredPosting`) — schema.org
    `JobPosting` JSON-LD first, then OpenGraph `og:title`/`og:description`. This
    costs no extra request and no provider call. It matters because the tag strip
    discards `<script>` blocks, which is exactly where a JS-rendered page keeps
    its posting: the captured Workday fixture strips to **zero** characters yet
-   carries the full 4.8 k-char posting as JSON-LD.
+   carries the full 4.8 k-char posting as JSON-LD. The block is parsed as
+   written — a browser never entity-decodes a `<script>` body, and Jibe's
+   descriptions carry `&quot;` inside JSON strings, which decoding first turns
+   into invalid JSON. Decoding is the fallback for a generator that escaped the
+   whole block. `og:site_name` is ignored when it merely repeats `og:title`.
 4. **One LLM query**, low temperature. With the page in hand the model is asked to
    *extract* the posting from the raw HTML (capped at 160 k chars, web tools off,
    `NO_POSTING` sentinel for a page that has none) — **not** to fetch it. Asking a

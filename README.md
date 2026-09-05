@@ -1,12 +1,12 @@
-# Interview Flow (.NET)
+# <img src="src/InterviewFlow.App/Assets/logo.png" alt="Interview Flow logo" height="32"> Interview Flow (.NET)
 
 [![Download – Releases](https://img.shields.io/github/v/release/loxsmoke/interview-flow-net?label=Download%20%E2%80%93%20Releases&logo=github)](https://github.com/loxsmoke/interview-flow-net/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/loxsmoke/interview-flow-net/total?label=Downloads&logo=github)](https://github.com/loxsmoke/interview-flow-net/releases)
 [![CI](https://github.com/loxsmoke/interview-flow-net/actions/workflows/ci.yml/badge.svg)](https://github.com/loxsmoke/interview-flow-net/actions/workflows/ci.yml)
 
-<img src="src/InterviewFlow.App/Assets/logo.png" alt="Interview Flow logo" width="120">
-
 📥 **[Download the latest release](https://github.com/loxsmoke/interview-flow-net/releases/latest)** — portable Windows zip or macOS app bundle, self-contained (no .NET runtime needed).
+
+![Interview Flow screenshot](screenshot.png)
 
 Native .NET 10 + Avalonia port of [Interview Flow](../interview-flow) — a local AI interview-prep coach. Runs on **Windows and macOS**, shares its **data formats** with the original app, and matches its on-screen markdown rendering.
 

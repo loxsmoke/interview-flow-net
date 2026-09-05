@@ -27,8 +27,11 @@ public sealed record JobPostingResult(
 ///         JSON, Greenhouse's board API, the iCIMS frame document.</item>
 ///   <item>Plain HTTP fetch behind the SSRF guard + a block-aware strip that
 ///         keeps paragraphs and bullets. A page that only embeds the posting
-///         in a same-host frame is followed into that frame first.</item>
-///   <item>Structured data already in that HTML — JSON-LD, then OpenGraph.</item>
+///         in a same-host frame is followed into that frame first. A full
+///         JSON-LD JobPosting in the HTML is preferred to the stripped text,
+///         which on a client-rendered board is only the site's menus.</item>
+///   <item>Structured data already in that HTML when the strip is thin —
+///         JSON-LD, then OpenGraph.</item>
 ///   <item>One LLM call: extraction from the fetched HTML when we have it,
 ///         a server-side web fetch only when the request itself failed.</item>
 /// </list>
@@ -204,12 +207,19 @@ public static partial class JobPostingFetcher
     }
 
     /// <summary>
-    /// Steps 2 and 3 for one fetched document: its text when that clears the
-    /// threshold (named from the metadata, since the body rarely names the
-    /// employer), else its structured data when that does, else null.
+    /// Steps 2 and 3 for one fetched document. A JSON-LD JobPosting that clears
+    /// the threshold wins outright: it is the posting the site hands to search
+    /// engines, with no site chrome. A client-rendered board (Jibe) strips to
+    /// a page of menus that clears the threshold too, and trusting that text
+    /// stored the navigation as the posting. Otherwise the page text when it
+    /// clears the threshold (named from the metadata, since the body rarely
+    /// names the employer), else an OpenGraph teaser when that does, else null.
     /// </summary>
     private static PostingDetails? PageDetails(string html, string text, PostingDetails structured)
     {
+        if (!structured.Teaser && structured.Text.Length >= ThinTextThreshold)
+            return structured;
+
         if (text.Length >= ThinTextThreshold)
         {
             var named = structured with { Text = text };

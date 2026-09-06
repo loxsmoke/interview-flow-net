@@ -6,7 +6,7 @@
 
 📥 **[Download the latest release](https://github.com/loxsmoke/interview-flow-net/releases/latest)** — portable Windows zip or macOS app bundle, self-contained (no .NET runtime needed).
 
-![Interview Flow screenshot](screenshot.png)
+![Interview Flow screenshot](screenplay.gif)
 
 Native .NET 10 + Avalonia port of [Interview Flow](../interview-flow) — a local AI interview-prep coach. Runs on **Windows and macOS**, shares its **data formats** with the original app, and matches its on-screen markdown rendering.
 

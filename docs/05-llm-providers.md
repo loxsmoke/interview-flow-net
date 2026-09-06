@@ -1,4 +1,4 @@
-# 05 — LLM Provider Layer
+﻿# 05 — LLM Provider Layer
 
 Source: `app/agents/streaming.py` (provider abstraction), `app/agents/*.py` (per-section agents). The port reimplements this in `InterviewFlow.Core/Providers` + `Core/Agents`.
 
@@ -115,6 +115,18 @@ private / loopback / reserved / link-local IPs — ported from the original).
      well over 1 k chars of site navigation, so without this the plain fetch
      accepted the menus as the posting (the Cotiviti regression). A frame
      document with no JSON-LD is a miss and falls through.
+   - **ADP WorkforceNow requisition JSON** (`AdpPosting`) —
+     `https://workforcenow.adp.com/mascsr/default/mdf/recruitment/recruitment.html?cid=…&ccId=…&jobId=…&lang=…`
+     is an Angular shell: it strips to a 90-char browser-compatibility notice
+     and carries no JSON-LD, OpenGraph or frame, so every non-LLM step came up
+     empty and the LLM was handed markup with no posting (the PlaneSense
+     regression). The career center serves the requisition from
+     `…/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions/{jobId}?cid=…&ccId=…&locale={lang}`:
+     `requisitionTitle`, `requisitionLocations[0].nameCode.shortName`,
+     `workLevelCode.shortName`, `clientRequisitionID`, `postDate` and an HTML
+     `requisitionDescription`. The payload never names the employer (ADP
+     identifies the client only by `cid`), so Company stays blank from this
+     source. `workforcenow.cloud.adp.com` serves the same career center.
 2. **Plain `HttpClient` fetch**, then a **block-aware strip** (`HtmlText.PageToText`):
    block tags become newlines and `<li>` becomes a bullet, so a posting keeps its
    headings and lists. The original's flat `_html_to_text` (kept as
@@ -196,6 +208,20 @@ temperature costs a little determinism; sending it to a model that refuses it co
 the whole run). The per-section temperature map still applies to Sonnet 4.6, Opus
 4.6, Haiku 4.5 and older. This was already latent: Opus 4.7 shipped in the picker
 and would have 400'd on every run.
+
+**The same holds for OpenAI's reasoning models.** GPT-5.x and the o-series answer
+any `temperature` but the default with a 400 (`Unsupported value: 'temperature'
+does not support 0.3 with this model`), which failed every non-web section on the
+default GPT-5.6 Terra. `OpenAiProvider.AcceptsTemperature` sends the field only to
+the GPT-4 / GPT-3.5 lines and treats an unrecognised id as a reasoning model. Two
+related Responses-API fixes from the same incident: reasoning tokens count against
+`max_output_tokens`, so reasoning models get 16 000 instead of the GPT-4 line's
+8 000; and the stream's terminal failure events (`response.incomplete`,
+`response.failed`, `error`) are now read — an incomplete response keeps whatever
+text arrived and appends a "cut short" note, a failure raises
+`ProviderResponseException` with OpenAI's reason and is not retried. Before, all
+three surfaced only as "stream ended before response.completed", retried five
+times as if transient, with the reason lost.
 
 Not modelled: Fable 5 (its `stop_reason: "refusal"` needs handling the provider
 doesn't have, and it requires 30-day retention), cached-input/batch rates, and

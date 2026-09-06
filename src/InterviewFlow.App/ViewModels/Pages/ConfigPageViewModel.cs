@@ -101,6 +101,27 @@ public sealed partial class ConfigPageViewModel : ObservableObject
     public string EnvPath { get; }
     public bool TelemetryEnabled => Core.Logging.Telemetry.IsExporting;
 
+    // ── Shortcuts (Windows only) ─────────────────────────────────────────────
+
+    /// <summary>The group shows only where a shortcut can be written (Windows, with a locatable exe).</summary>
+    public bool ShortcutsSupported => Platform.WindowsShortcuts.IsSupported;
+
+    // True when that place already holds a link to this executable; the
+    // button then offers to remove it instead. Another copy of the app's
+    // shortcut doesn't count — "same location" is the running exe's path.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DesktopShortcutLabel))]
+    private bool _hasDesktopShortcut;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StartMenuShortcutLabel))]
+    private bool _hasStartMenuShortcut;
+
+    [ObservableProperty] private string _shortcutStatus = "";
+
+    public string DesktopShortcutLabel => HasDesktopShortcut ? "Remove shortcut" : "Add shortcut";
+    public string StartMenuShortcutLabel => HasStartMenuShortcut ? "Remove shortcut" : "Add shortcut";
+
     // ── Static option lists (verbatim from index.html) ───────────────────────
 
     public IReadOnlyList<ModelOption> AnthropicModels { get; } =
@@ -212,7 +233,48 @@ public sealed partial class ConfigPageViewModel : ObservableObject
         _selectedOpenAiModel = OpenAiModels.FirstOrDefault(m => m.Id == _openAiModel);
 
         RefreshDataFiles();
+        RefreshShortcuts();
         _loading = false;
+    }
+
+    // ── Shortcuts ────────────────────────────────────────────────────────────
+
+    /// <summary>Re-reads which places hold a link to this executable.</summary>
+    public void RefreshShortcuts()
+    {
+        if (!ShortcutsSupported)
+            return;
+        HasDesktopShortcut = Platform.WindowsShortcuts.Existing(Platform.ShortcutPlace.Desktop) is not null;
+        HasStartMenuShortcut = Platform.WindowsShortcuts.Existing(Platform.ShortcutPlace.StartMenu) is not null;
+    }
+
+    [RelayCommand]
+    private void ToggleDesktopShortcut() => ToggleShortcut(Platform.ShortcutPlace.Desktop, HasDesktopShortcut, "the desktop");
+
+    [RelayCommand]
+    private void ToggleStartMenuShortcut() => ToggleShortcut(Platform.ShortcutPlace.StartMenu, HasStartMenuShortcut, "the Start menu");
+
+    private void ToggleShortcut(Platform.ShortcutPlace place, bool exists, string placeName)
+    {
+        try
+        {
+            if (exists)
+            {
+                Platform.WindowsShortcuts.Remove(place);
+                ShortcutStatus = $"Removed the shortcut from {placeName}.";
+            }
+            else
+            {
+                var path = Platform.WindowsShortcuts.Add(place);
+                ShortcutStatus = $"Added {Path.GetFileName(path)} to {placeName}.";
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            ShortcutStatus = $"Couldn't change the shortcut on {placeName}: {ex.Message}";
+        }
+
+        RefreshShortcuts();
     }
 
     // ── Apply-on-change persistence (openlogi-net pattern) ───────────────────

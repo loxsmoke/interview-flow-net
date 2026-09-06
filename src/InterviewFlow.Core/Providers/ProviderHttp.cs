@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -6,6 +6,13 @@ using System.Text.Json.Nodes;
 namespace InterviewFlow.Core.Providers;
 
 /// <summary>Thrown for HTTP 429 so provider retry loops can react uniformly.</summary>
+/// <summary>
+/// The API answered, but with a terminal failure rather than a result: the
+/// request was rejected, or the model stopped before producing anything. Not
+/// transient — retrying the same request would fail the same way.
+/// </summary>
+public sealed class ProviderResponseException(string message) : Exception(message);
+
 public sealed class RateLimitException(string message, double? suggestedWaitSeconds) : Exception(message)
 {
     public double? SuggestedWaitSeconds { get; } = suggestedWaitSeconds;

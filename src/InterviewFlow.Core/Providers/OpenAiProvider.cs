@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -9,16 +9,50 @@ namespace InterviewFlow.Core.Providers;
 /// <summary>
 /// OpenAI over raw SSE (port of _iter_openai_chat/_responses): Chat Completions
 /// for plain queries; the Responses API with web_search_preview for web mode
-/// (surfacing search calls and url_citation annotations as tool_use events,
-/// max_output_tokens 8000; the Responses path ignores temperature, like the
-/// original). Rate-limit retries: hint parsed from the error message; pre-stream
-/// floor 15·2^attempt capped at 60 s, mid-stream at least 60 s + reset event.
-/// Transient stream errors back off 5·2^attempt capped at 60 s.
+/// (surfacing search calls and url_citation annotations as tool_use events;
+/// the Responses path ignores temperature, like the original). Rate-limit
+/// retries: hint parsed from the error message; pre-stream floor 15·2^attempt
+/// capped at 60 s, mid-stream at least 60 s + reset event. Transient stream
+/// errors back off 5·2^attempt capped at 60 s.
+/// <para>
+/// The GPT-5 line and the o-series are reasoning models: they reject any
+/// <c>temperature</c> but the default with a 400 (<see cref="AcceptsTemperature"/>
+/// gates the field, as the Anthropic provider does for Claude 4.7+), and their
+/// hidden reasoning tokens count against <c>max_output_tokens</c>, so they get
+/// twice the budget of the GPT-4 line. A Responses stream that ends with
+/// <c>response.incomplete</c>, <c>response.failed</c> or <c>error</c> reports
+/// that reason instead of a generic "stream ended".
+/// </para>
 /// </summary>
 public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
 {
     private const int MaxAttempts = 5;
+    private const int Gpt4OutputTokens = 8000;
+    private const int ReasoningOutputTokens = 16000;
     private readonly HttpClient _http = http ?? ProviderHttp.Default;
+
+    /// <summary>
+    /// True for the models that still take a sampling temperature: the GPT-4
+    /// and GPT-3.5 lines. GPT-5.x and the o-series answer any value but the
+    /// default with a 400, and an id we've never seen is assumed to be a newer
+    /// reasoning model — omitting temperature costs a little determinism,
+    /// sending it to a model that refuses it costs the whole run.
+    /// </summary>
+    internal static bool AcceptsTemperature(string model)
+    {
+        var id = model.Trim().ToLowerInvariant();
+        return id.StartsWith("gpt-4", StringComparison.Ordinal)
+            || id.StartsWith("gpt-3.5", StringComparison.Ordinal)
+            || id.StartsWith("chatgpt-4o", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Output budget for a web-mode run. Reasoning models spend part of it on
+    /// reasoning the caller never sees, so a research answer that fits the
+    /// GPT-4 budget can come back cut short on GPT-5.
+    /// </summary>
+    internal static int MaxOutputTokens(string model) =>
+        AcceptsTemperature(model) ? Gpt4OutputTokens : ReasoningOutputTokens;
 
     public IAsyncEnumerable<AgentEvent> StreamAsync(
         string prompt, string system, string model, double? temperature, bool useWeb,
@@ -113,7 +147,7 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
             ["stream"] = true,
             ["stream_options"] = new JsonObject { ["include_usage"] = true },
         };
-        if (temperature is not null)
+        if (temperature is not null && AcceptsTemperature(model))
             body["temperature"] = temperature.Value;
 
         using var response = await PostAsync("https://api.openai.com/v1/chat/completions", body, ct);
@@ -168,7 +202,7 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
             ["model"] = model,
             ["tools"] = new JsonArray(new JsonObject { ["type"] = "web_search_preview" }),
             ["input"] = input,
-            ["max_output_tokens"] = 8000,
+            ["max_output_tokens"] = MaxOutputTokens(model),
             ["stream"] = true,
         };
 
@@ -179,12 +213,36 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
         long promptTokens = 0, completionTokens = 0;
         var actualModel = model;
         var sawCompleted = false;
+        var cutShort = "";
         var sw = Stopwatch.StartNew();
 
         await foreach (var node in ProviderHttp.ReadSseJsonAsync(response, ct))
         {
             switch ((string?)node["type"])
             {
+                // Terminal failures. The stream closes right after these, and
+                // without handling them the only symptom was "stream ended
+                // before response.completed" — retried as transient, reason lost.
+                case "response.failed":
+                    throw new ProviderResponseException(
+                        "OpenAI response failed: " + Describe(node["response"]?["error"]));
+
+                case "error":
+                    throw new ProviderResponseException("OpenAI stream error: " + Describe(node));
+
+                case "response.incomplete":
+                    // Usually max_output_tokens on a reasoning model. Whatever
+                    // text arrived is still the answer so far; keep it and say
+                    // it was cut short rather than throwing the run away.
+                    var reason = (string?)node["response"]?["incomplete_details"]?["reason"] ?? "unknown";
+                    if (fullText.Length == 0)
+                        throw new ProviderResponseException($"OpenAI response incomplete ({reason}) with no output");
+                    Logging.DiagnosticLog.Warn("openai", $"response incomplete ({reason}); keeping partial text");
+                    cutShort = reason;
+                    sawCompleted = true;
+                    ReadUsage(node["response"], ref actualModel, ref promptTokens, ref completionTokens);
+                    break;
+
                 case "response.output_item.added":
                     if ((string?)node["item"]?["type"] == "web_search_call")
                     {
@@ -215,9 +273,7 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
                 case "response.completed":
                     sawCompleted = true;
                     var final = node["response"];
-                    actualModel = (string?)final?["model"] ?? model;
-                    promptTokens = (long?)final?["usage"]?["input_tokens"] ?? 0;
-                    completionTokens = (long?)final?["usage"]?["output_tokens"] ?? 0;
+                    ReadUsage(final, ref actualModel, ref promptTokens, ref completionTokens);
 
                     // Citation URLs from the completed response → WebFetch entries.
                     if (final?["output"] is JsonArray output)
@@ -254,6 +310,9 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
         if (!sawCompleted)
             throw new IOException("stream ended before response.completed");
 
+        if (cutShort.Length > 0)
+            fullText.Append("\n\n_Response cut short by the model's output limit (").Append(cutShort).Append(")._");
+
         yield return new CompleteEvent(
             fullText.ToString(),
             Pricing.OpenAiCost(actualModel, promptTokens, completionTokens),
@@ -262,6 +321,25 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
             toolUses,
             promptTokens,
             completionTokens);
+    }
+
+    private static void ReadUsage(JsonNode? response, ref string model, ref long promptTokens, ref long completionTokens)
+    {
+        model = (string?)response?["model"] ?? model;
+        promptTokens = (long?)response?["usage"]?["input_tokens"] ?? 0;
+        completionTokens = (long?)response?["usage"]?["output_tokens"] ?? 0;
+    }
+
+    /// <summary>"code: message" from an error object, or the raw node.</summary>
+    private static string Describe(JsonNode? error)
+    {
+        if (error is null)
+            return "no detail";
+        var code = (string?)error["code"] ?? "";
+        var message = (string?)error["message"] ?? "";
+        if (message.Length == 0)
+            return error.ToJsonString();
+        return code.Length > 0 ? $"{code}: {message}" : message;
     }
 
     private async Task<HttpResponseMessage> PostAsync(string url, JsonObject body, CancellationToken ct)

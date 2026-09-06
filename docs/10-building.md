@@ -122,8 +122,11 @@ Enforced by convention, not by the compiler — see
 
 - All projects target `net10.0` — never `net10.0-windows`.
 - No `\` in paths: `Path.Combine`, and forward slashes in csproj item paths.
-- Platform branches live in `Core/Paths.cs` and `App/Platform/ShellOpen.cs`. Add
-  new ones there, not inline.
+- Platform branches live in `Core/Paths.cs` and `App/Platform/` (`ShellOpen.cs`,
+  `WindowsShortcuts.cs`, `ShellLink.cs`). Add new ones there, not inline.
+- No COM interop or `dynamic`: the trimmed Windows publish drops built-in COM
+  support, so a `WScript.Shell`-style call that works under `dotnet run` fails
+  in the release zip. `ShellLink.cs` writes `.lnk` files by hand for that reason.
 - Fonts come from `.WithInterFont()`; monospace runs name a fallback chain
   (`Cascadia Mono,Consolas,Menlo,monospace`) so macOS resolves Menlo.
 - macOS keyboard: F-keys are media keys by default, so the F12 dev harness needs

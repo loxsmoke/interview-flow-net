@@ -268,6 +268,35 @@
                      Text="Importing overwrites this file (the previous one is kept as .bak). Telemetry: set OTEL_EXPORTER_OTLP_ENDPOINT to export query traces over OTLP." />
         </StackPanel>
       </Border>
+
+      <!-- Shortcuts: Windows only. Each button flips to "remove" once that
+           place holds a link to this very executable. -->
+      <StackPanel Spacing="16" IsVisible="{Binding ShortcutsSupported}">
+        <TextBlock Classes="sectionLabel" Text="SHORTCUTS" Margin="0,8,0,0" />
+        <Border Classes="providerCard">
+          <StackPanel Spacing="10">
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+              <TextBlock Grid.Row="0" Grid.Column="0" Classes="fieldLabel" Text="Desktop"
+                         VerticalAlignment="Center" />
+              <Button Grid.Row="0" Grid.Column="1" Classes="subtle" Padding="10,5" FontSize="11"
+                      MinWidth="150" HorizontalContentAlignment="Center" Margin="0,2"
+                      Content="{Binding DesktopShortcutLabel}"
+                      Command="{Binding ToggleDesktopShortcutCommand}" />
+              <TextBlock Grid.Row="1" Grid.Column="0" Classes="fieldLabel" Text="Start menu"
+                         VerticalAlignment="Center" />
+              <Button Grid.Row="1" Grid.Column="1" Classes="subtle" Padding="10,5" FontSize="11"
+                      MinWidth="150" HorizontalContentAlignment="Center" Margin="0,2"
+                      Content="{Binding StartMenuShortcutLabel}"
+                      Command="{Binding ToggleStartMenuShortcutCommand}" />
+            </Grid>
+            <TextBlock Text="{Binding ShortcutStatus}" FontSize="11" TextWrapping="Wrap"
+                       Foreground="{StaticResource InfoSkyBrush}"
+                       IsVisible="{Binding ShortcutStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <TextBlock FontSize="11" Foreground="#64748B" TextWrapping="Wrap"
+                       Text="Shortcuts point at this copy of the app. Move it and they stop working — remove them first, then add them again from the new location." />
+          </StackPanel>
+        </Border>
+      </StackPanel>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

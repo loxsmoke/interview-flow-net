@@ -151,6 +151,17 @@ public static partial class JobPostingFetcher
         //    only in its JSON-LD or its <title>, and Setup fills Company/
         //    Position from that.
         var html = await GetStringAsync(client, input, "text/html", ct);
+
+        // 1b. A careers site that embeds a Greenhouse board names the board in
+        //     its embed script or application frame. Step 1 guessed the token
+        //     from the host; when that missed, the page says which it is.
+        if (GreenhousePosting.ApiUrlFromPage(html, input) is { } embedded
+            && await FromBoardApiAsync(client, embedded, "application/json", GreenhousePosting.ParseJobJson, ct)
+                is { } fromEmbed)
+        {
+            return fromEmbed;
+        }
+
         var structured = html.Length > 0 ? StructuredPosting.Extract(html) : PostingDetails.Empty;
         var text = HtmlText.PageToText(html);
 
@@ -276,18 +287,26 @@ public static partial class JobPostingFetcher
 
         foreach (var (endpoint, accept, parse) in boards)
         {
-            if (endpoint is null)
-                continue;
-            var body = await GetStringAsync(client, endpoint, accept, ct);
-            if (body.Length > 0 && parse(body) is { } posting
-                && posting.Text.Length >= ThinTextThreshold)
+            if (endpoint is not null
+                && await FromBoardApiAsync(client, endpoint, accept, parse, ct) is { } resolved)
             {
-                return Resolved(posting);
+                return resolved;
             }
-
-            Logging.DiagnosticLog.Warn("fetch", $"board api yielded nothing: {endpoint}");
         }
 
+        return null;
+    }
+
+    /// <summary>One board-API request; null (logged) when it yields no posting.</summary>
+    private static async Task<JobPostingResult?> FromBoardApiAsync(
+        HttpClient client, string endpoint, string accept, Func<string, PostingDetails?> parse,
+        CancellationToken ct)
+    {
+        var body = await GetStringAsync(client, endpoint, accept, ct);
+        if (body.Length > 0 && parse(body) is { } posting && posting.Text.Length >= ThinTextThreshold)
+            return Resolved(posting);
+
+        Logging.DiagnosticLog.Warn("fetch", $"board api yielded nothing: {endpoint}");
         return null;
     }
 

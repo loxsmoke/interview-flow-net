@@ -49,7 +49,14 @@ public static partial class StructuredPosting
             // is taken as written: Jibe (iCIMS) postings carry "&quot;" inside
             // description strings, and decoding those first breaks the JSON.
             // Decoding is the fallback, for a generator that escaped the block.
-            var doc = ParseJson(raw) ?? ParseJson(System.Net.WebUtility.HtmlDecode(raw));
+            // A generator that pasted a multi-line description straight into
+            // the string (Horizontal Talent's Sitecore board) leaves raw
+            // newlines and tabs inside it — invalid JSON that a browser never
+            // has to parse, so the site never notices. Escaping those is the
+            // last try.
+            var doc = ParseJson(raw)
+                ?? ParseJson(System.Net.WebUtility.HtmlDecode(raw))
+                ?? ParseJson(EscapeControlCharacters(raw));
             if (doc is null)
                 continue;
 
@@ -79,6 +86,51 @@ public static partial class StructuredPosting
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Escapes the control characters that appear literally inside JSON string
+    /// literals (newline, tab, carriage return and the rest of U+0000–U+001F),
+    /// leaving everything outside strings, and existing escapes, as they are.
+    /// </summary>
+    internal static string EscapeControlCharacters(string json)
+    {
+        var sb = new System.Text.StringBuilder(json.Length + 64);
+        var inString = false;
+        for (var i = 0; i < json.Length; i++)
+        {
+            var c = json[i];
+            if (inString)
+            {
+                if (c == '\\' && i + 1 < json.Length)
+                {
+                    sb.Append(c).Append(json[++i]);
+                    continue;
+                }
+
+                if (c == '"')
+                    inString = false;
+                else if (c < ' ')
+                {
+                    sb.Append(c switch
+                    {
+                        '\n' => "\\n",
+                        '\r' => "\\r",
+                        '\t' => "\\t",
+                        _ => $"\\u{(int)c:x4}",
+                    });
+                    continue;
+                }
+            }
+            else if (c == '"')
+            {
+                inString = true;
+            }
+
+            sb.Append(c);
+        }
+
+        return sb.ToString();
     }
 
     /// <summary>
@@ -146,8 +198,33 @@ public static partial class StructuredPosting
         // the page title names no employer.
         if (site.Equals(title, StringComparison.OrdinalIgnoreCase))
             site = "";
+        var company = site.Length > 0 ? site : CompanyFromPage(html);
+        title = WithoutSiteSuffix(title, company);
         var text = title.Length == 0 ? description : $"{title}\n\n{description}";
-        return new PostingDetails(text, title, site.Length > 0 ? site : CompanyFromPage(html), Teaser: true);
+        return new PostingDetails(text, title, company, Teaser: true);
+    }
+
+    /// <summary>
+    /// A page title with the site's name appended ("Software Engineer | Roblox",
+    /// "Engineer - Acme", "Engineer at Acme") reduced to the role. The suffix
+    /// is only dropped when it is the employer the page named, so a role that
+    /// merely contains a separator is left alone.
+    /// </summary>
+    internal static string WithoutSiteSuffix(string title, string company)
+    {
+        if (company.Length == 0)
+            return title;
+        foreach (var separator in new[] { " | ", " - ", " \u2013 ", " \u2014 ", " at ", " @ " })
+        {
+            var suffix = separator + company;
+            if (title.EndsWith(suffix, StringComparison.OrdinalIgnoreCase)
+                && title.Length > suffix.Length)
+            {
+                return title[..^suffix.Length].Trim();
+            }
+        }
+
+        return title;
     }
 
     /// <summary>A JSON-LD document may be an object, an array, or an @graph.</summary>

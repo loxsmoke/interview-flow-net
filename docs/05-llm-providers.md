@@ -106,7 +106,14 @@ private / loopback / reserved / link-local IPs — ported from the original).
      server-rendered, so scraping it "works" — but it carries no JSON-LD, names
      the employer only in `<title>`, and drags in "Back to jobs"/"Apply". The API
      gives `title`, `company_name`, `location.name` and an entity-escaped HTML
-     `content` body.
+     `content` body. A careers site that embeds the board under its own host
+     (`careers.roblox.com/jobs/8171506?gh_jid=8171506`) is the same posting:
+     `gh_jid` is the job id, and the board token is guessed from the domain name
+     (`roblox`). Job ids are global, so a wrong guess is one 404 and the page
+     fetch then reads the token the page itself names — the embed script's
+     `?for=`, the application frame, or a board-hosted link — and asks again.
+     Without this the Roblox page scraped "successfully": the site menus, five
+     related jobs and the footer around the posting, titled "… | Roblox".
    - **iCIMS frame document** (`IcimsPosting`) — `https://{tenant}.icims.com/jobs/{id}/…`
      serves the employer's corporate site wrapped around an empty frame; the
      posting is the same URL with `in_iframe=1`, carried as JSON-LD (title,
@@ -152,6 +159,13 @@ private / loopback / reserved / link-local IPs — ported from the original).
      `<head>`: Jibe's i18n bundle quotes an HTML e-mail template, so a literal
      `</head>` sits inside a script, and a single pass ended the head there and
      leaked 230 k chars of translation strings as the posting.
+   - **JSON-LD with raw control characters.** Horizontal Talent's board pastes
+     the multi-line description straight into the JSON string, leaving literal
+     newlines and tabs that strict parsing rejects; browsers never parse JSON-LD,
+     so the site never notices. `StructuredPosting.EscapeControlCharacters` is the
+     third parse attempt (after as-written and entity-decoded). Without it that
+     page fell through to the strip, which cleared the threshold with the posting
+     buried in "Back to job search / Apply Now" chrome and no role name.
 3. **Structured data inside that same HTML** (`StructuredPosting`) — schema.org
    `JobPosting` JSON-LD first, then OpenGraph `og:title`/`og:description`. This
    costs no extra request and no provider call. It matters because the tag strip
@@ -222,6 +236,23 @@ text arrived and appends a "cut short" note, a failure raises
 `ProviderResponseException` with OpenAI's reason and is not retried. Before, all
 three surfaced only as "stream ended before response.completed", retried five
 times as if transient, with the reason lost.
+
+**What a failed run tells the user.** Every API answers a rejected request with
+a JSON body that names the problem, and a stream can end with an `error` event
+that does the same. `ProviderErrors` reads the three shapes in use (OpenAI
+`error.code/message`, Anthropic `error.type/message`, Gemini
+`error.status/message`) and `ProviderErrors.Describe` turns any exception into
+the headline the queue and chat pages show — "OpenAI: You have no credits
+remaining. Add credits to continue using the API at …" — with the exception
+chain, never a stack trace, under Details; the trace goes to the diagnostic log.
+`ProviderHttp.EnsureSuccessAsync` sorts failures by what a retry could do: a 429
+that will clear by waiting is `RateLimitException`; any other 4xx, including a
+429 whose body says the account is out of credit, is `ProviderResponseException`
+and is not retried; a 5xx stays `HttpRequestException`, which the web-mode retry
+treats as transient. Before this, an exhausted OpenAI balance was shown as
+"Queued agent encountered an error. Please try again." over a 30-line stack dump,
+and a pre-stream `insufficient_quota` 429 sat through five rate-limit back-offs
+first.
 
 Not modelled: Fable 5 (its `stop_reason: "refusal"` needs handling the provider
 doesn't have, and it requires 30-day retention), cached-input/batch rates, and

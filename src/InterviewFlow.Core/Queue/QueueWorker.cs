@@ -1,5 +1,6 @@
 using InterviewFlow.Core.Agents;
 using InterviewFlow.Core.Logging;
+using InterviewFlow.Core.Providers;
 
 namespace InterviewFlow.Core.Queue;
 
@@ -46,12 +47,14 @@ public sealed class QueueWorker(
             }
             catch (Exception exc)
             {
+                // The stack trace goes to the log; the user gets the reason
+                // ("OpenAI: You have no credits remaining…") with the exception
+                // chain under Details.
                 DiagnosticLog.Error("queue", "queued agent worker error", exc);
+                var shown = ProviderErrors.Describe(exc);
                 try
                 {
-                    queue.MarkFailed(item.Id,
-                        "Queued agent encountered an error. Please try again.",
-                        exc.ToString());
+                    queue.MarkFailed(item.Id, shown.Message, shown.Detail);
                 }
                 catch (KeyNotFoundException)
                 {

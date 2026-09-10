@@ -224,11 +224,12 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
                 // without handling them the only symptom was "stream ended
                 // before response.completed" — retried as transient, reason lost.
                 case "response.failed":
-                    throw new ProviderResponseException(
-                        "OpenAI response failed: " + Describe(node["response"]?["error"]));
+                    throw Failure("OpenAI response failed", node["response"]?["error"]);
 
                 case "error":
-                    throw new ProviderResponseException("OpenAI stream error: " + Describe(node));
+                    // The wire nests the detail under "error"; the SDK's view
+                    // flattens it onto the event. Take whichever is there.
+                    throw Failure("OpenAI stream error", node["error"] ?? node);
 
                 case "response.incomplete":
                     // Usually max_output_tokens on a reasoning model. Whatever
@@ -236,7 +237,12 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
                     // it was cut short rather than throwing the run away.
                     var reason = (string?)node["response"]?["incomplete_details"]?["reason"] ?? "unknown";
                     if (fullText.Length == 0)
-                        throw new ProviderResponseException($"OpenAI response incomplete ({reason}) with no output");
+                    {
+                        throw new ProviderResponseException(
+                            $"OpenAI response incomplete ({reason}) with no output", "OpenAI", reason,
+                            $"The model stopped before producing any output ({reason}).");
+                    }
+
                     Logging.DiagnosticLog.Warn("openai", $"response incomplete ({reason}); keeping partial text");
                     cutShort = reason;
                     sawCompleted = true;
@@ -330,16 +336,15 @@ public sealed class OpenAiProvider(string apiKey, HttpClient? http = null)
         completionTokens = (long?)response?["usage"]?["output_tokens"] ?? 0;
     }
 
-    /// <summary>"code: message" from an error object, or the raw node.</summary>
-    private static string Describe(JsonNode? error)
+    /// <summary>A terminal stream event as an exception that names the reason.</summary>
+    private static ProviderResponseException Failure(string prefix, JsonNode? error)
     {
-        if (error is null)
-            return "no detail";
-        var code = (string?)error["code"] ?? "";
-        var message = (string?)error["message"] ?? "";
-        if (message.Length == 0)
-            return error.ToJsonString();
-        return code.Length > 0 ? $"{code}: {message}" : message;
+        var parsed = ProviderErrors.Parse(error);
+        var detail = parsed.Message.Length > 0
+            ? (parsed.Code.Length > 0 ? $"{parsed.Code}: {parsed.Message}" : parsed.Message)
+            : error?.ToJsonString() ?? "no detail";
+        return new ProviderResponseException($"{prefix}: {detail}", "OpenAI", parsed.Code,
+            parsed.Message.Length > 0 ? parsed.Message : $"The stream ended with an error ({detail}).");
     }
 
     private async Task<HttpResponseMessage> PostAsync(string url, JsonObject body, CancellationToken ct)

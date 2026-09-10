@@ -121,7 +121,7 @@ public sealed partial class SetupPageViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            FetchStatus = $"Fetch failed: {ex.Message}";
+            FetchStatus = $"Fetch failed: {Core.Providers.ProviderErrors.Describe(ex).Message}";
             return false;
         }
         finally

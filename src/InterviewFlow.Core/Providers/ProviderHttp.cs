@@ -5,17 +5,28 @@ using System.Text.Json.Nodes;
 
 namespace InterviewFlow.Core.Providers;
 
-/// <summary>Thrown for HTTP 429 so provider retry loops can react uniformly.</summary>
 /// <summary>
 /// The API answered, but with a terminal failure rather than a result: the
-/// request was rejected, or the model stopped before producing anything. Not
-/// transient — retrying the same request would fail the same way.
+/// request was rejected (bad key, no credit, unsupported parameter), or the
+/// model stopped before producing anything. Not transient — retrying the
+/// same request would fail the same way. <see cref="ApiMessage"/> is the
+/// API's own sentence, which is what the user is shown.
 /// </summary>
-public sealed class ProviderResponseException(string message) : Exception(message);
+public sealed class ProviderResponseException(
+    string message, string provider = "", string code = "", string? apiMessage = null) : Exception(message)
+{
+    public string Provider { get; } = provider;
+    public string Code { get; } = code;
+    public string ApiMessage { get; } = apiMessage is { Length: > 0 } ? apiMessage : message;
+}
 
-public sealed class RateLimitException(string message, double? suggestedWaitSeconds) : Exception(message)
+/// <summary>Thrown for HTTP 429 so provider retry loops can react uniformly.</summary>
+public sealed class RateLimitException(
+    string message, double? suggestedWaitSeconds, string provider = "", string apiMessage = "") : Exception(message)
 {
     public double? SuggestedWaitSeconds { get; } = suggestedWaitSeconds;
+    public string Provider { get; } = provider;
+    public string ApiMessage { get; } = apiMessage;
 }
 
 /// <summary>
@@ -87,22 +98,40 @@ public static class ProviderHttp
         }
     }
 
-    /// <summary>Throws RateLimitException on 429, HttpRequestException otherwise.</summary>
+    /// <summary>
+    /// Throws RateLimitException on a 429 that will clear by waiting,
+    /// ProviderResponseException for any other 4xx (including a 429 that says
+    /// the account is out of credit — waiting never fixes that, and the retry
+    /// loops used to sit through five back-offs before saying so), and
+    /// HttpRequestException for a 5xx, which the web-mode retry treats as
+    /// transient.
+    /// </summary>
     public static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode)
             return;
         var body = await response.Content.ReadAsStringAsync(ct);
-        if ((int)response.StatusCode == 429)
+        var status = (int)response.StatusCode;
+        var provider = ProviderErrors.ProviderFor(response.RequestMessage?.RequestUri);
+        var error = ProviderErrors.Parse(body);
+        var summary = $"HTTP {status}: {Truncate(body)}";
+
+        if (status == 429 && !error.IsQuotaExhausted)
         {
             var header = response.Headers.TryGetValues("retry-after", out var vals) ? vals.FirstOrDefault() : null;
             double? suggested = header is not null
                 ? RetryParsing.ParseRetryAfterHeader(header)
                 : RetryParsing.ParseOpenAiRetryAfter(body);
-            throw new RateLimitException($"HTTP 429: {Truncate(body)}", suggested);
+            throw new RateLimitException(summary, suggested, provider, error.Message);
         }
 
-        throw new HttpRequestException($"HTTP {(int)response.StatusCode}: {Truncate(body)}");
+        if (status is >= 400 and < 500)
+        {
+            throw new ProviderResponseException(summary, provider, error.Code,
+                error.Message.Length > 0 ? error.Message : $"The request was rejected (HTTP {status}).");
+        }
+
+        throw new HttpRequestException(summary, null, response.StatusCode);
     }
 
     private static string Truncate(string s) => s.Length > 600 ? s[..600] : s;

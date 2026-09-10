@@ -124,12 +124,7 @@ public sealed partial class ChatViewModel(
         BubbleAdded?.Invoke();
     }
 
-    private static string Describe(Exception ex) => ex switch
-    {
-        Core.Providers.RateLimitException => "Rate limited by the AI provider. Wait a moment and try again.",
-        HttpRequestException http => $"AI request failed: {http.Message}",
-        _ => $"Chat failed: {ex.Message}",
-    };
+    private static string Describe(Exception ex) => Core.Providers.ProviderErrors.Describe(ex).Message;
 
     public void Cancel()
     {

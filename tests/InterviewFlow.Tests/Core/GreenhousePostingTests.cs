@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using InterviewFlow.Core.Agents;
 
 namespace InterviewFlow.Tests.Core;
@@ -31,6 +31,14 @@ public sealed class GreenhousePostingTests : IDisposable
     // The embedded application form carries board + id in the query string.
     [InlineData("https://boards.greenhouse.io/embed/job_app?for=acme&token=12345",
         "https://boards-api.greenhouse.io/v1/boards/acme/jobs/12345")]
+    // A board embedded on the employer's own site: gh_jid is the job id, and
+    // the board token is guessed from the domain name (the Roblox regression).
+    [InlineData("https://careers.roblox.com/jobs/8171506?gh_jid=8171506",
+        "https://boards-api.greenhouse.io/v1/boards/roblox/jobs/8171506")]
+    [InlineData("https://www.acme.com/careers/openings?gh_jid=42&gh_src=abc",
+        "https://boards-api.greenhouse.io/v1/boards/acme/jobs/42")]
+    [InlineData("https://jobs.acme.co.uk/?gh_jid=42",
+        "https://boards-api.greenhouse.io/v1/boards/acme/jobs/42")]
     public void Maps_posting_urls_to_the_board_api(string url, string expected) =>
         Assert.Equal(expected, GreenhousePosting.ApiUrl(url));
 
@@ -39,8 +47,107 @@ public sealed class GreenhousePostingTests : IDisposable
     [InlineData("https://boards.greenhouse.io/acme")]                        // board root
     [InlineData("https://boards.greenhouse.io/jobs/12345")]                  // no board segment
     [InlineData("https://boards.greenhouse.io/embed/job_app?for=acme")]      // no token
+    [InlineData("https://careers.roblox.com/jobs/8171506")]                  // no gh_jid: not known to be Greenhouse
+    [InlineData("https://careers.roblox.com/jobs?gh_jid=abc")]               // gh_jid is numeric
+    [InlineData("https://localhost/jobs?gh_jid=42")]                         // no domain label to guess from
     public void Leaves_non_posting_urls_alone(string url) =>
         Assert.Null(GreenhousePosting.ApiUrl(url));
+
+    [Theory]
+    [InlineData("careers.roblox.com", "roblox")]
+    [InlineData("www.acme.com", "acme")]
+    [InlineData("acme.com", "acme")]
+    [InlineData("jobs.acme.co.uk", "acme")]
+    [InlineData("acme.com.au", "acme")]
+    [InlineData("localhost", "")]
+    public void Board_token_is_the_domain_name(string host, string expected) =>
+        Assert.Equal(expected, GreenhousePosting.BoardFromHost(host));
+
+    private const string EmbeddedPageUrl = "https://careers.roblox.com/jobs/8171506?gh_jid=8171506";
+
+    [Theory]
+    // The embed script names the board; the id comes from the page URL.
+    [InlineData("""<script src="https://boards.greenhouse.io/embed/job_board/js?for=robloxcorp"></script>""",
+        EmbeddedPageUrl, "https://boards-api.greenhouse.io/v1/boards/robloxcorp/jobs/8171506")]
+    // The application frame names both, so a host page without gh_jid maps too.
+    [InlineData("""<iframe src="https://boards.greenhouse.io/embed/job_app?for=robloxcorp&amp;token=8171506">""",
+        "https://careers.roblox.com/jobs/8171506", "https://boards-api.greenhouse.io/v1/boards/robloxcorp/jobs/8171506")]
+    // A board-hosted link on the page.
+    [InlineData("""<a href="https://boards.greenhouse.io/robloxcorp/jobs/8171506">Apply</a>""",
+        EmbeddedPageUrl, "https://boards-api.greenhouse.io/v1/boards/robloxcorp/jobs/8171506")]
+    // Nothing Greenhouse on the page.
+    [InlineData("<html><body>Apply now</body></html>", EmbeddedPageUrl, null)]
+    // A board named, but no job id anywhere.
+    [InlineData("""<script src="https://boards.greenhouse.io/embed/job_board/js?for=robloxcorp"></script>""",
+        "https://careers.roblox.com/jobs/8171506", null)]
+    public void Reads_the_board_from_an_embedding_page(string html, string url, string? expected) =>
+        Assert.Equal(expected, GreenhousePosting.ApiUrlFromPage(html, url));
+
+    /// <summary>
+    /// The Roblox regression: a Next.js careers site embedding Greenhouse. The
+    /// page scrape "worked" — it stored the site menus, five related jobs and
+    /// the footer around the posting, with the title as "… | Roblox".
+    /// </summary>
+    [Fact]
+    public async Task Embedded_board_resolves_from_the_board_api()
+    {
+        var handler = new FakeHandler();
+        handler.Enqueue(HttpStatusCode.OK, Fixture("greenhouse-embedded-job.json"), "application/json");
+
+        var result = await JobPostingFetcher.ResolveAsync(
+            _env.Config("ACTIVE_PROVIDER=ollama\n"), EmbeddedPageUrl,
+            TestContext.Current.CancellationToken, new HttpClient(handler));
+
+        Assert.True(result.WasFetched);
+        Assert.False(result.UsedLlmFallback);
+        Assert.Equal("Roblox", result.Company);
+        Assert.Equal("Software Engineer, Engine Infrastructure", result.Position);
+        Assert.Contains("Location: San Mateo, CA, United States", result.Text);
+        Assert.Contains("Requisition: 41464", result.Text);
+        Assert.Contains("\nYou will:\n", result.Text);
+        Assert.Contains("\n• Develop engine code in C++", result.Text);
+        Assert.DoesNotContain("Related Jobs", result.Text);
+        Assert.DoesNotContain("Skip to content", result.Text);
+        Assert.Single(handler.Requests);
+        Assert.Equal("https://boards-api.greenhouse.io/v1/boards/roblox/jobs/8171506", handler.Requests[0].Url);
+    }
+
+    /// <summary>
+    /// When the domain name is not the board token, the page's embed script is.
+    /// </summary>
+    [Fact]
+    public async Task Embedded_board_falls_back_to_the_token_the_page_names()
+    {
+        var handler = new FakeHandler();
+        handler.Enqueue(HttpStatusCode.NotFound, """{"status":404,"error":"Job not found"}""", "application/json");
+        handler.Enqueue(HttpStatusCode.OK,
+            """<html><head><script src="https://boards.greenhouse.io/embed/job_board/js?for=robloxcorp"></script>"""
+            + "</head><body><nav>Careers</nav></body></html>", "text/html");
+        handler.Enqueue(HttpStatusCode.OK, Fixture("greenhouse-embedded-job.json"), "application/json");
+
+        var result = await JobPostingFetcher.ResolveAsync(
+            _env.Config("ACTIVE_PROVIDER=ollama\n"), EmbeddedPageUrl,
+            TestContext.Current.CancellationToken, new HttpClient(handler));
+
+        Assert.True(result.WasFetched);
+        Assert.Equal("Roblox", result.Company);
+        Assert.Equal("Software Engineer, Engine Infrastructure", result.Position);
+        Assert.Equal(3, handler.Requests.Count);
+        Assert.EndsWith("/boards/roblox/jobs/8171506", handler.Requests[0].Url);
+        Assert.Equal(EmbeddedPageUrl, handler.Requests[1].Url);
+        Assert.EndsWith("/boards/robloxcorp/jobs/8171506", handler.Requests[2].Url);
+    }
+
+    [Theory]
+    [InlineData("Software Engineer, Engine Infrastructure | Roblox", "Roblox", "Software Engineer, Engine Infrastructure")]
+    [InlineData("Staff Engineer - Acme", "Acme", "Staff Engineer")]
+    [InlineData("Staff Engineer at Acme", "Acme", "Staff Engineer")]
+    [InlineData("Staff Engineer | Acme", "acme", "Staff Engineer")]   // case-insensitive
+    [InlineData("Staff Engineer | Acme", "Other Co", "Staff Engineer | Acme")]
+    [InlineData("Staff Engineer | Acme", "", "Staff Engineer | Acme")]
+    [InlineData(" | Acme", "Acme", " | Acme")]                          // nothing left: keep as is
+    public void Site_suffix_is_dropped_from_the_title(string title, string company, string expected) =>
+        Assert.Equal(expected, StructuredPosting.WithoutSiteSuffix(title, company));
 
     [Fact]
     public void Parses_the_real_board_api_payload()

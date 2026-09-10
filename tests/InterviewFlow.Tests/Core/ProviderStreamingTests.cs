@@ -29,7 +29,10 @@ internal sealed class FakeHandler : HttpMessageHandler
     {
         var body = request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken);
         Requests.Add((request.RequestUri!.ToString(), body));
-        return _responses.Dequeue();
+        var response = _responses.Dequeue();
+        // What a real handler does, and what error reporting reads the host from.
+        response.RequestMessage = request;
+        return response;
     }
 }
 

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using InterviewFlow.Core.Agents;
 using InterviewFlow.Core.Config;
 
@@ -188,6 +188,57 @@ public sealed class StructuredPostingTests : IDisposable
         Assert.Contains("Employment type: FULL_TIME", text);
         Assert.Contains("• Ship code", text);
         Assert.DoesNotContain("<li>", text);
+    }
+
+    /// <summary>
+    /// A generator that pastes a multi-line description straight into the
+    /// JSON string leaves raw newlines and tabs in it. Browsers never parse
+    /// JSON-LD, so the site never notices; a strict parser rejects the block.
+    /// </summary>
+    [Fact]
+    public void Tolerates_raw_control_characters_inside_json_ld_strings()
+    {
+        const string page = "<script type=\"application/ld+json\">"
+            + "{\"@type\":\"JobPosting\",\"title\":\"SRE\",\"hiringOrganization\":{\"name\":\"Acme\"},"
+            + "\"description\":\"<p>Keep it up.</p>\n\n\t<p>Quoted \\\"escape\\\" stays.</p>\"}"
+            + "</script>";
+
+        var posting = StructuredPosting.Extract(page);
+        Assert.Equal("SRE", posting.Title);
+        Assert.Equal("Acme", posting.Company);
+        Assert.Contains("Keep it up.", posting.Text);
+        Assert.Contains("Quoted \"escape\" stays.", posting.Text);
+    }
+
+    [Fact]
+    public void Escapes_only_what_sits_inside_strings()
+    {
+        // Structural whitespace stays; the newline inside the value is escaped;
+        // an existing escape sequence is left alone.
+        const string raw = "{\n  \"a\": \"x\ny\",\n  \"b\": \"al\\\\ready\\n\"\n}";
+        Assert.Equal("{\n  \"a\": \"x\\ny\",\n  \"b\": \"al\\\\ready\\n\"\n}",
+            StructuredPosting.EscapeControlCharacters(raw));
+    }
+
+    /// <summary>
+    /// The real page: server-rendered, so the strip clears the threshold with
+    /// the posting buried in site menus — and its JSON-LD, which names the role
+    /// and carries the description alone, has the raw-newline problem above.
+    /// </summary>
+    [Fact]
+    public void Horizontal_talent_posting_comes_from_its_json_ld()
+    {
+        var html = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "horizontal-job-page.html"));
+        var posting = StructuredPosting.Extract(html);
+
+        Assert.False(posting.Teaser);
+        Assert.Equal("Software Engineer", posting.Title);
+        Assert.Equal("Horizontal Talent", posting.Company);
+        Assert.StartsWith("Software Engineer", posting.Text);
+        Assert.Contains("Location: Foster City, CA", posting.Text);
+        Assert.Contains("• Lead the migration of complex data systems from PostgreSQL to DynamoDB.", posting.Text);
+        Assert.DoesNotContain("Back to job search", posting.Text);
+        Assert.DoesNotContain("Apply Now", posting.Text);
     }
 
     [Fact]

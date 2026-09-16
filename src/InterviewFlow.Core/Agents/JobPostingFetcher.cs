@@ -25,7 +25,7 @@ public sealed record JobPostingResult(
 /// <list type="number">
 ///   <item>A job board's own API, when the URL is one it serves: Workday CXS
 ///         JSON, Greenhouse's board API, the iCIMS frame document, ADP
-///         WorkforceNow's requisition JSON.</item>
+///         WorkforceNow's requisition JSON, SmartRecruiters' Posting API.</item>
 ///   <item>Plain HTTP fetch behind the SSRF guard + a block-aware strip that
 ///         keeps paragraphs and bullets. A page that only embeds the posting
 ///         in a same-host frame is followed into that frame first. A full
@@ -283,6 +283,7 @@ public static partial class JobPostingFetcher
             (GreenhousePosting.ApiUrl(url), "application/json", GreenhousePosting.ParseJobJson),
             (IcimsPosting.FrameUrl(url), "text/html", IcimsPosting.ParseFrameHtml),
             (AdpPosting.ApiUrl(url), "application/json", AdpPosting.ParseJobJson),
+            (SmartRecruitersPosting.ApiUrl(url), "application/json", SmartRecruitersPosting.ParsePostingJson),
         ];
 
         foreach (var (endpoint, accept, parse) in boards)

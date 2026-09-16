@@ -28,6 +28,12 @@ public static partial class StructuredPosting
         RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex TitleRe();
 
+    // schema.org microdata: <div itemprop="hiringOrganization" …><meta itemprop="name" content="Acme">
+    // SmartRecruiters marks its server-rendered page up this way and carries no JSON-LD.
+    [GeneratedRegex("""itemprop\s*=\s*["']hiringOrganization["'][^>]*>.{0,400}?itemprop\s*=\s*["']name["'][^>]*?content\s*=\s*["'](?<name>[^"']+)["']""",
+        RegexOptions.Singleline | RegexOptions.IgnoreCase)]
+    private static partial Regex MicrodataOrganizationRe();
+
     /// <summary>
     /// Best structured rendering of the page, or <see cref="PostingDetails.Empty"/>
     /// when there is none. Prefers JSON-LD (full description, named employer)
@@ -134,9 +140,10 @@ public static partial class StructuredPosting
     }
 
     /// <summary>
-    /// The employer named by the page shell, or "". og:site_name first, then the
-    /// document title, which job boards write as "… at {Company}" (Greenhouse:
-    /// "Job Application for Staff Software Engineer at CareDx, Inc.").
+    /// The employer named by the page shell, or "". og:site_name first, then a
+    /// microdata <c>hiringOrganization</c> name, then the document title, which
+    /// job boards write as "… at {Company}" (Greenhouse: "Job Application for
+    /// Staff Software Engineer at CareDx, Inc.").
     /// </summary>
     public static string CompanyFromPage(string html)
     {
@@ -144,6 +151,12 @@ public static partial class StructuredPosting
             && !site.Equals(MetaValue(html, "title"), StringComparison.OrdinalIgnoreCase))
         {
             return site;
+        }
+
+        if (MicrodataOrganizationRe().Match(html) is { Success: true } org
+            && System.Net.WebUtility.HtmlDecode(org.Groups["name"].Value).Trim() is { Length: > 0 and <= 80 } named)
+        {
+            return named;
         }
 
         var title = TitleRe().Match(html) is { Success: true } m

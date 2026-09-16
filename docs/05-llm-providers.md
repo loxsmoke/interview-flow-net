@@ -134,6 +134,24 @@ private / loopback / reserved / link-local IPs — ported from the original).
      `requisitionDescription`. The payload never names the employer (ADP
      identifies the client only by `cid`), so Company stays blank from this
      source. `workforcenow.cloud.adp.com` serves the same career center.
+   - **SmartRecruiters Posting API** (`SmartRecruitersPosting`) —
+     `https://jobs.smartrecruiters.com/{company}/{id}-{slug}` (and the hosted
+     `careers.smartrecruiters.com` form) →
+     `https://api.smartrecruiters.com/v1/companies/{company}/postings/{id}`, no
+     key needed. The page is server-rendered, so it scraped "successfully": the
+     posting with the cookie banner, the IE11 browser-support notice, three
+     "I'm interested" buttons and the footer around it. It carries schema.org
+     **microdata** rather than JSON-LD, and its `<title>` is
+     "{Company} {Role} | SmartRecruiters" with no `og:site_name`, so Company
+     stayed blank (the LinkedIn regression). The API gives `name`,
+     `company.name`, `location.fullLocation` + `remote`/`hybrid` flags,
+     `typeOfEmployment.label`, `experienceLevel.label`, `refNumber`,
+     `releasedDate`, and the ad as titled HTML sections under `jobAd.sections`
+     (company description, job description, qualifications, additional
+     information), rendered in payload order with their titles as headings.
+     The same incident taught `StructuredPosting.CompanyFromPage` to read a
+     microdata `hiringOrganization` → `name`, between `og:site_name` and the
+     title's "… at {Company}" tail, so the page fallback names the employer too.
 2. **Plain `HttpClient` fetch**, then a **block-aware strip** (`HtmlText.PageToText`):
    block tags become newlines and `<li>` becomes a bullet, so a posting keeps its
    headings and lists. The original's flat `_html_to_text` (kept as
@@ -188,8 +206,9 @@ private / loopback / reserved / link-local IPs — ported from the original).
 
 Company/Position for Setup come from whichever step resolved: the board API's own
 fields, JSON-LD `title`/`hiringOrganization.name`, or — as the last resort —
-`StructuredPosting.CompanyFromPage`, which reads `og:site_name` and then the
-document title's "… at {Company}" tail (Greenhouse writes
+`StructuredPosting.CompanyFromPage`, which reads `og:site_name`, then a microdata
+`hiringOrganization` name (SmartRecruiters), then the document title's
+"… at {Company}" tail (Greenhouse writes
 "Job Application for Staff Software Engineer at CareDx, Inc."). Metadata is read
 even when the page body scrapes fine, since that is often the only place the
 employer is named.

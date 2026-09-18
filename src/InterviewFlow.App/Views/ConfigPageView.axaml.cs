@@ -20,6 +20,10 @@ public sealed partial class ConfigPageView : UserControl
     public static readonly IValueConverter PillText =
         new FuncValueConverter<bool, string>(ok => ok ? "Configured" : "Not set");
 
+    /// <summary>CLI cards: the executable was located (or not).</summary>
+    public static readonly IValueConverter FoundText =
+        new FuncValueConverter<bool, string>(ok => ok ? "Found" : "Not found");
+
     /// <summary>Eye toggle: '\0' reveals the key, '•' masks it.</summary>
     public static readonly IValueConverter MaskChar =
         new FuncValueConverter<bool, char>(show => show ? '\0' : '•');
@@ -36,6 +40,7 @@ public sealed partial class ConfigPageView : UserControl
                 _subscribed.ConfirmRequested -= OnConfirmRequested;
                 _subscribed.FolderPickRequested -= OnFolderPickRequested;
                 _subscribed.EnvFilePickRequested -= OnEnvFilePickRequested;
+                _subscribed.ExeFilePickRequested -= OnExeFilePickRequested;
                 _subscribed.PropertyChanged -= OnVmPropertyChanged;
             }
 
@@ -45,6 +50,7 @@ public sealed partial class ConfigPageView : UserControl
                 _subscribed.ConfirmRequested += OnConfirmRequested;
                 _subscribed.FolderPickRequested += OnFolderPickRequested;
                 _subscribed.EnvFilePickRequested += OnEnvFilePickRequested;
+                _subscribed.ExeFilePickRequested += OnExeFilePickRequested;
                 _subscribed.PropertyChanged += OnVmPropertyChanged;
                 UpdateCtxLabel();
             }
@@ -119,6 +125,22 @@ public sealed partial class ConfigPageView : UserControl
                 new FilePickerFileType("Settings files") { Patterns = ["*.env", ".env", "*.env.*"] },
                 new FilePickerFileType("All files") { Patterns = ["*"] },
             ],
+        });
+        return files.FirstOrDefault()?.TryGetLocalPath();
+    }
+
+    private async Task<string?> OnExeFilePickRequested(string title)
+    {
+        if (TopLevel.GetTopLevel(this) is not { } top)
+            return null;
+        var files = await top.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            FileTypeFilter = OperatingSystem.IsWindows()
+                ? [new FilePickerFileType("Programs") { Patterns = ["*.exe", "*.cmd", "*.bat"] },
+                   new FilePickerFileType("All files") { Patterns = ["*"] }]
+                : [new FilePickerFileType("All files") { Patterns = ["*"] }],
         });
         return files.FirstOrDefault()?.TryGetLocalPath();
     }

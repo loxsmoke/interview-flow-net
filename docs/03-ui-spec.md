@@ -107,7 +107,7 @@ Version, 11-row icon/label/description feature list, GitHub link (styled `text-i
 
 ## 3.11 Configuration
 
-- Four provider radio cards (Anthropic / OpenAI / Google Gemini / Local Ollama), each with a Configured/Not-set pill.
+- Six provider radio cards. First the two **installed-CLI** cards (Claude Code CLI / OpenAI Codex CLI — `.NET port addition`, not in the original) with a Found/Not-found pill, an executable field (empty = auto-detect; the detected path shows as the placeholder) + Browse…, and a model picker (Claude: alias dropdown `sonnet | opus | haiku` + full ids; Codex: free text, empty = the CLI's `~/.codex/config.toml` default). A "Detect installed CLIs" button above them re-probes. Then the four API cards (Anthropic / OpenAI / Google Gemini / Local Ollama), each with a Configured/Not-set pill.
 - Per provider: API-key field with eye toggle + "Get API key ↗" link (`text-xs`, indigo-400) + model dropdown.
   - Anthropic models: Claude Sonnet 4.6 (Balanced, recommended), Claude Opus 4.7 (Most capable), Claude Haiku 4.5.
   - OpenAI: gpt-5.5, gpt-5.4, gpt-5.4-mini, gpt-5, gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4.1-mini.

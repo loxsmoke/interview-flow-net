@@ -46,13 +46,69 @@ public sealed partial class ConfigPageViewModel : ObservableObject
     // ── Provider selection ───────────────────────────────────────────────────
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAnthropic), nameof(IsOpenAi), nameof(IsGemini), nameof(IsOllama))]
+    [NotifyPropertyChangedFor(nameof(IsClaudeCli), nameof(IsCodexCli),
+        nameof(IsAnthropic), nameof(IsOpenAi), nameof(IsGemini), nameof(IsOllama))]
     private string _activeProvider = "anthropic";
 
+    public bool IsClaudeCli => ActiveProvider == "claude-cli";
+    public bool IsCodexCli => ActiveProvider == "codex-cli";
     public bool IsAnthropic => ActiveProvider == "anthropic";
     public bool IsOpenAi => ActiveProvider == "openai";
     public bool IsGemini => ActiveProvider == "gemini";
     public bool IsOllama => ActiveProvider == "ollama";
+
+    // ── Installed CLIs (Claude Code / Codex) ─────────────────────────────────
+
+    // Empty path = auto-detect. The detected location is shown as the field's
+    // placeholder, and the Found / Not found pill re-probes on every edit —
+    // the Codex desktop app moves its binary on each update.
+
+    [ObservableProperty] private string _claudeCliPath = "";
+    [ObservableProperty] private string _claudeCliModel = "";
+    [ObservableProperty] private string _codexCliPath = "";
+    [ObservableProperty] private string _codexCliModel = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ClaudeCliFound), nameof(ClaudeCliPathHint))]
+    private string _claudeCliDetected = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CodexCliFound), nameof(CodexCliPathHint))]
+    private string _codexCliDetected = "";
+
+    public bool ClaudeCliFound => ClaudeCliDetected.Length > 0;
+    public bool CodexCliFound => CodexCliDetected.Length > 0;
+
+    public string ClaudeCliPathHint => ClaudeCliFound
+        ? $"Auto-detected: {ClaudeCliDetected}"
+        : "Not found — install Claude Code, or browse to claude(.exe)";
+
+    public string CodexCliPathHint => CodexCliFound
+        ? $"Auto-detected: {CodexCliDetected}"
+        : "Not found — install the Codex CLI or app, or browse to codex(.exe)";
+
+    /// <summary>Placeholder for the Codex model box: what the CLI picks on its own.</summary>
+    public string CodexCliModelHint
+    {
+        get
+        {
+            var fromCli = CliTools.CodexDefaultModel();
+            return fromCli.Length > 0
+                ? $"CLI default ({fromCli} from ~/.codex/config.toml)"
+                : "CLI default (from ~/.codex/config.toml)";
+        }
+    }
+
+    /// <summary>Model aliases the CLI resolves itself, then the same ids as the API card.</summary>
+    public IReadOnlyList<ModelOption> ClaudeCliModels { get; }
+
+    [ObservableProperty] private ModelOption? _selectedClaudeCliModel;
+
+    partial void OnSelectedClaudeCliModelChanged(ModelOption? value)
+    {
+        if (value is not null)
+            ClaudeCliModel = value.Id;
+    }
 
     // ── Keys & models ────────────────────────────────────────────────────────
 
@@ -205,6 +261,9 @@ public sealed partial class ConfigPageViewModel : ObservableObject
     /// <summary>Asks the view for a .env file picker; returns null on cancel.</summary>
     public event Func<Task<string?>>? EnvFilePickRequested;
 
+    /// <summary>Asks the view for an executable picker (title given); returns null on cancel.</summary>
+    public event Func<string, Task<string?>>? ExeFilePickRequested;
+
     public ConfigPageViewModel() : this(new MainViewModel()) { } // design-time
 
     public ConfigPageViewModel(MainViewModel shell)
@@ -214,7 +273,22 @@ public sealed partial class ConfigPageViewModel : ObservableObject
         EnvPath = config.Env.Path;
         DefaultDataDir = Core.Paths.DataDir("");
 
+        ClaudeCliModels =
+        [
+            new("sonnet", "Sonnet (latest)", "Balanced, recommended"),
+            new("opus", "Opus (latest)", "Most capable"),
+            new("haiku", "Haiku (latest)", "Fast & affordable"),
+            .. AnthropicModels,
+        ];
+
         _activeProvider = ProviderRouter.ResolveProvider(config);
+        _claudeCliPath = config.ClaudeCliPath;
+        _claudeCliModel = config.ClaudeCliModel;
+        _codexCliPath = config.CodexCliPath;
+        _codexCliModel = config.CodexCliModel;
+        _claudeCliDetected = CliTools.FindClaude(_claudeCliPath) ?? "";
+        _codexCliDetected = CliTools.FindCodex(_codexCliPath) ?? "";
+        _selectedClaudeCliModel = ClaudeCliModels.FirstOrDefault(m => m.Id == _claudeCliModel);
         _anthropicKey = config.AnthropicApiKey;
         _anthropicModel = config.AnthropicModel;
         _openAiKey = config.OpenAiApiKey;
@@ -286,7 +360,59 @@ public sealed partial class ConfigPageViewModel : ObservableObject
     // non-nullable declaration.
 
     partial void OnActiveProviderChanged(string value) => Save("ACTIVE_PROVIDER", value);
+    partial void OnClaudeCliModelChanged(string value) => Save("CLAUDE_CLI_MODEL", value);
+    partial void OnCodexCliModelChanged(string value) => Save("CODEX_CLI_MODEL", value);
     partial void OnAnthropicKeyChanged(string value) => Save("ANTHROPIC_API_KEY", value);
+
+    partial void OnClaudeCliPathChanged(string value)
+    {
+        Save("CLAUDE_CLI_PATH", value);
+        ClaudeCliDetected = CliTools.FindClaude(value) ?? "";
+    }
+
+    partial void OnCodexCliPathChanged(string value)
+    {
+        Save("CODEX_CLI_PATH", value);
+        CodexCliDetected = CliTools.FindCodex(value) ?? "";
+    }
+
+    /// <summary>Re-probes both CLIs (PATH, installer locations, the Codex app bundle).</summary>
+    [RelayCommand]
+    private void DetectClis()
+    {
+        ClaudeCliDetected = CliTools.FindClaude(ClaudeCliPath) ?? "";
+        CodexCliDetected = CliTools.FindCodex(CodexCliPath) ?? "";
+        OnPropertyChanged(nameof(CodexCliModelHint));
+        FetchStatus = (ClaudeCliFound, CodexCliFound) switch
+        {
+            (true, true) => "Found both Claude Code and Codex.",
+            (true, false) => "Found Claude Code; Codex was not found.",
+            (false, true) => "Found Codex; Claude Code was not found.",
+            _ => "Neither Claude Code nor Codex was found on this machine.",
+        };
+        _shell.NotifyConfigChanged();
+    }
+
+    [RelayCommand]
+    private async Task BrowseClaudeCliAsync()
+    {
+        if (ExeFilePickRequested is null)
+            return;
+        var picked = await ExeFilePickRequested("Locate the Claude Code executable");
+        if (picked is not null)
+            ClaudeCliPath = picked;
+    }
+
+    [RelayCommand]
+    private async Task BrowseCodexCliAsync()
+    {
+        if (ExeFilePickRequested is null)
+            return;
+        var picked = await ExeFilePickRequested("Locate the Codex executable");
+        if (picked is not null)
+            CodexCliPath = picked;
+    }
+
     partial void OnAnthropicModelChanged(string value) => Save("ANTHROPIC_MODEL", value);
     partial void OnOpenAiKeyChanged(string value) => Save("OPENAI_API_KEY", value);
     partial void OnOpenAiModelChanged(string value) => Save("OPENAI_MODEL", value);
@@ -589,6 +715,13 @@ public sealed partial class ConfigPageViewModel : ObservableObject
         try
         {
             ActiveProvider = ProviderRouter.ResolveProvider(config);
+            ClaudeCliPath = config.ClaudeCliPath;
+            ClaudeCliModel = config.ClaudeCliModel;
+            CodexCliPath = config.CodexCliPath;
+            CodexCliModel = config.CodexCliModel;
+            ClaudeCliDetected = CliTools.FindClaude(ClaudeCliPath) ?? "";
+            CodexCliDetected = CliTools.FindCodex(CodexCliPath) ?? "";
+            SelectedClaudeCliModel = ClaudeCliModels.FirstOrDefault(m => m.Id == ClaudeCliModel);
             AnthropicKey = config.AnthropicApiKey;
             AnthropicModel = config.AnthropicModel;
             OpenAiKey = config.OpenAiApiKey;

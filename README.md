@@ -39,6 +39,8 @@ Throughout:
   available to their prompts via template tags.
 - **Bring your own model.** Anthropic, OpenAI, Google Gemini, or a local Ollama
   install — switch providers in Settings; per-query cost is shown as you go.
+  Already have Claude Code or the Codex CLI installed and signed in? Pick it as
+  the provider and skip the API key entirely.
 - **Local-first.** Everything lives in plain files on your machine. No account,
   no cloud sync, and the data format is shared with the original Python app, so
   both can point at one folder.
@@ -58,6 +60,9 @@ There are no files to create or edit; the app writes its own on first save.
 
 - **AI provider** — pick Anthropic, OpenAI, Google Gemini, or a local Ollama
   install, paste an API key, choose a model. That's the whole setup.
+  Or pick **Claude Code CLI** / **OpenAI Codex CLI** at the top of the list to run
+  every step through the CLI you already have installed and signed in — no key.
+  The executable is auto-detected; browse to it if it lives somewhere unusual.
 - **Resume info** — the name and contact line that go on `.docx` exports.
 - **Data folder** — where your applications are kept. Change it and the app
   copies, verifies, and moves your data for you.

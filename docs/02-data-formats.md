@@ -91,7 +91,9 @@ Substitution wraps non-empty values as `<user_provided_{tag}>\n{value}\n</user_p
 See [08-configuration.md](08-configuration.md) and ADR-002. Keys:
 
 ```
-ACTIVE_PROVIDER=anthropic          # anthropic|openai|gemini|ollama
+ACTIVE_PROVIDER=anthropic          # claude-cli|codex-cli|anthropic|openai|gemini|ollama
+CLAUDE_CLI_PATH=    CLAUDE_CLI_MODEL=sonnet   # .NET port only: installed-CLI providers
+CODEX_CLI_PATH=     CODEX_CLI_MODEL=          # (empty path = auto-detect; empty Codex model = the CLI's own)
 ANTHROPIC_API_KEY=  ANTHROPIC_MODEL=claude-sonnet-4-6
 OPENAI_API_KEY=     OPENAI_MODEL=gpt-4o
 GEMINI_API_KEY=     GEMINI_MODEL=gemini-2.5-flash

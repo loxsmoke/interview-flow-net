@@ -44,7 +44,7 @@ See 03 §3.11 for full UI. Functional notes:
 
 - Saving provider/key/model updates the config file immediately (openlogi-net's apply-on-change pattern fits: `partial void On<Prop>Changed` → save).
 - Gemini model list fetched live from the API; Ollama models via `GET /api/tags` with tool-capability probe via `POST /api/show`.
-- The ⚙ sidebar button pulses amber while no provider has a key configured.
+- The ⚙ sidebar button pulses amber while no provider has a key configured (or, for the CLI providers, while the selected CLI cannot be located).
 - Provider label chip on Setup shows `"{Provider} - {model}"`.
 
 ## 8.5 Data-folder migration wizard (port exactly)

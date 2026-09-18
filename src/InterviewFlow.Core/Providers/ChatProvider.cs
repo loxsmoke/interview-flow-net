@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using InterviewFlow.Core.Agents;
 using InterviewFlow.Core.Config;
 
 namespace InterviewFlow.Core.Providers;
@@ -18,7 +19,7 @@ public static class ChatProvider
 {
     public static Task<string> CompleteAsync(
         AppConfig config, IReadOnlyList<ChatMessage> messages, double? temperature,
-        CancellationToken ct = default, HttpClient? http = null)
+        CancellationToken ct = default, HttpClient? http = null, ICliRunner? cli = null)
     {
         var provider = ProviderRouter.ResolveProvider(config);
         var resolved = temperature;
@@ -30,6 +31,7 @@ public static class ChatProvider
             "openai" => OpenAiAsync(config, messages, resolved, ct, http),
             "gemini" => GeminiAsync(config, messages, resolved, ct, http),
             "ollama" => OllamaAsync(config, messages, resolved, ct, http),
+            "claude-cli" or "codex-cli" => CliAsync(provider, config, messages, ct, cli),
             _ => AnthropicAsync(config, messages, resolved, ct, http),
         };
     }
@@ -38,6 +40,55 @@ public static class ChatProvider
     {
         var system = messages.FirstOrDefault(m => m.Role == "system")?.Content ?? "";
         return (system, messages.Where(m => m.Role != "system").ToList());
+    }
+
+    /// <summary>
+    /// The CLIs run one prompt per process, so a chat turn is the whole
+    /// transcript rendered as one prompt (<see cref="RenderTranscript"/>) and
+    /// the answer is the run's complete text.
+    /// </summary>
+    private static async Task<string> CliAsync(
+        string provider, AppConfig config, IReadOnlyList<ChatMessage> messages,
+        CancellationToken ct, ICliRunner? cli)
+    {
+        var (system, rest) = SplitSystem(messages);
+        var prompt = RenderTranscript(rest);
+        var stream = provider == "claude-cli"
+            ? new ClaudeCliProvider(CliTools.RequireClaude(config.ClaudeCliPath), cli)
+                .StreamAsync(prompt, system, config.ClaudeCliModel, useWeb: false, ct)
+            : new CodexCliProvider(CliTools.RequireCodex(config.CodexCliPath), cli)
+                .StreamAsync(prompt, system, config.CodexCliModel, useWeb: false, ct);
+
+        var text = "";
+        await foreach (var evt in stream)
+        {
+            if (evt is CompleteEvent complete)
+                text = complete.Text;
+        }
+
+        return text;
+    }
+
+    /// <summary>
+    /// A multi-turn conversation as a single prompt: the turns in order under
+    /// role headings, ending with an open assistant heading for the model to
+    /// fill. A lone opening user message is passed through untouched.
+    /// </summary>
+    internal static string RenderTranscript(IReadOnlyList<ChatMessage> turns)
+    {
+        if (turns.Count == 1 && turns[0].Role == "user")
+            return turns[0].Content;
+
+        var sb = new StringBuilder();
+        sb.Append("The conversation so far, oldest first. Reply with only the assistant's next turn.\n\n");
+        foreach (var turn in turns)
+        {
+            sb.Append(turn.Role == "assistant" ? "### Assistant\n" : "### User\n");
+            sb.Append(turn.Content).Append("\n\n");
+        }
+
+        sb.Append("### Assistant\n");
+        return sb.ToString();
     }
 
     private static async Task<string> AnthropicAsync(

@@ -24,18 +24,24 @@ public static class ProviderRouter
     public static string ResolveProvider(AppConfig config)
     {
         var explicitProvider = config.ActiveProvider.Trim().ToLowerInvariant();
-        if (explicitProvider is "anthropic" or "openai" or "gemini" or "ollama")
+        if (explicitProvider is "anthropic" or "openai" or "gemini" or "ollama" or "claude-cli" or "codex-cli")
             return explicitProvider;
         return config.OpenAiApiKey.Length > 0 ? "openai" : "anthropic";
     }
 
+    /// <summary>The two providers that shell out to an installed agent CLI instead of calling an API.</summary>
+    public static bool IsCli(string provider) => provider is "claude-cli" or "codex-cli";
+
+    /// <param name="http">Test override for the HTTP providers.</param>
+    /// <param name="cli">Test override for the CLI providers.</param>
     public static async IAsyncEnumerable<AgentEvent> StreamQueryAsync(
         AppConfig config,
         string prompt,
         QueryOptions options,
         string traceName,
         [EnumeratorCancellation] CancellationToken ct = default,
-        HttpClient? http = null)
+        HttpClient? http = null,
+        ICliRunner? cli = null)
     {
         var system = options.SystemPrompt;
         yield return new SendEvent("system", system);
@@ -48,6 +54,8 @@ public static class ProviderRouter
             "ollama" => config.OllamaModel,
             "openai" => config.OpenAiModel,
             "gemini" => config.GeminiModel,
+            "claude-cli" => config.ClaudeCliModel,
+            "codex-cli" => config.CodexCliModel,
             _ => config.AnthropicModel,
         };
 
@@ -62,6 +70,11 @@ public static class ProviderRouter
                 .StreamAsync(prompt, system, config.OpenAiModel, temperature, options.UseWebSearch, ct),
             "gemini" => new GeminiProvider(config.GeminiApiKey, http)
                 .StreamAsync(prompt, system, config.GeminiModel, temperature, options.UseWebSearch, ct),
+            // The CLIs take no temperature; the section's value is simply not sent.
+            "claude-cli" => new ClaudeCliProvider(CliTools.RequireClaude(config.ClaudeCliPath), cli)
+                .StreamAsync(prompt, system, config.ClaudeCliModel, options.UseWebSearch, ct),
+            "codex-cli" => new CodexCliProvider(CliTools.RequireCodex(config.CodexCliPath), cli)
+                .StreamAsync(prompt, system, config.CodexCliModel, options.UseWebSearch, ct),
             _ => new AnthropicProvider(config.AnthropicApiKey, http)
                 .StreamAsync(prompt, system, config.AnthropicModel, temperature, options.UseWebSearch, ct),
         };

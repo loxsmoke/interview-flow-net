@@ -25,6 +25,8 @@ public sealed class AppConfig(EnvFile env)
     public static readonly IReadOnlyList<string> KnownKeys =
     [
         "ACTIVE_PROVIDER",
+        "CLAUDE_CLI_PATH", "CLAUDE_CLI_MODEL",
+        "CODEX_CLI_PATH", "CODEX_CLI_MODEL",
         "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL",
         "OPENAI_API_KEY", "OPENAI_MODEL",
         "GEMINI_API_KEY", "GEMINI_MODEL",
@@ -193,8 +195,17 @@ public sealed class AppConfig(EnvFile env)
 
     // ── Typed keys (defaults from .env.example / main.py) ────────────────────
 
-    /// <summary>anthropic|openai|gemini|ollama; empty = provider-layer fallback rule.</summary>
+    /// <summary>claude-cli|codex-cli|anthropic|openai|gemini|ollama; empty = provider-layer fallback rule.</summary>
     public string ActiveProvider => Get("ACTIVE_PROVIDER");
+
+    /// <summary>Claude Code executable; empty = find `claude` on PATH / the installer's location.</summary>
+    public string ClaudeCliPath => Get("CLAUDE_CLI_PATH");
+    /// <summary>Model alias or id passed to `claude --model`.</summary>
+    public string ClaudeCliModel => Get("CLAUDE_CLI_MODEL", "sonnet");
+    /// <summary>Codex executable; empty = find `codex` on PATH / the desktop app's bundle.</summary>
+    public string CodexCliPath => Get("CODEX_CLI_PATH");
+    /// <summary>Model passed to `codex exec --model`; empty = the CLI's own configured default.</summary>
+    public string CodexCliModel => Get("CODEX_CLI_MODEL");
 
     public string AnthropicApiKey => Get("ANTHROPIC_API_KEY");
     public string AnthropicModel => Get("ANTHROPIC_MODEL", "claude-sonnet-5");

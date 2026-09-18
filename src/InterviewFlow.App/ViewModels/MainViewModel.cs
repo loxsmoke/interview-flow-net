@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using InterviewFlow.App.ViewModels.Pages;
 using InterviewFlow.Core.Config;
 using InterviewFlow.Core.Models;
+using InterviewFlow.Core.Providers;
 using InterviewFlow.Core.State;
 
 namespace InterviewFlow.App.ViewModels;
@@ -143,7 +144,9 @@ public sealed partial class MainViewModel : ObservableObject
         Config.AnthropicApiKey.Length > 0
         || Config.OpenAiApiKey.Length > 0
         || Config.GeminiApiKey.Length > 0
-        || Config.ActiveProvider == "ollama";
+        || Config.ActiveProvider == "ollama"
+        || (Config.ActiveProvider == "claude-cli" && CliTools.FindClaude(Config.ClaudeCliPath) is not null)
+        || (Config.ActiveProvider == "codex-cli" && CliTools.FindCodex(Config.CodexCliPath) is not null);
 
     /// <summary>Setup-header chip, e.g. "Anthropic - claude-sonnet-4-6".</summary>
     public string ProviderChip
@@ -163,9 +166,20 @@ public sealed partial class MainViewModel : ObservableObject
                 "openai" => $"OpenAI - {Config.OpenAiModel}",
                 "gemini" => $"Gemini - {Config.GeminiModel}",
                 "ollama" => $"Ollama - {Config.OllamaModel}",
+                "claude-cli" => $"Claude Code - {Config.ClaudeCliModel}",
+                "codex-cli" => $"Codex - {CodexModelLabel()}",
                 _ => $"Anthropic - {Config.AnthropicModel}",
             };
         }
+    }
+
+    /// <summary>The configured Codex model, else what its own config file would pick.</summary>
+    private string CodexModelLabel()
+    {
+        if (Config.CodexCliModel.Length > 0)
+            return Config.CodexCliModel;
+        var fromCli = CliTools.CodexDefaultModel();
+        return fromCli.Length > 0 ? $"{fromCli} (CLI default)" : "CLI default";
     }
 
     // ── Navigation ───────────────────────────────────────────────────────────

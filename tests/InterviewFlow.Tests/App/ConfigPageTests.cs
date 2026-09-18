@@ -18,7 +18,8 @@ public sealed class ConfigPageTests : IDisposable
     // without a restart), which would otherwise leak into other tests.
     private static readonly string[] TouchedEnvKeys =
     [
-        "ACTIVE_PROVIDER", "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL",
+        "ACTIVE_PROVIDER", "CLAUDE_CLI_PATH", "CLAUDE_CLI_MODEL", "CODEX_CLI_PATH", "CODEX_CLI_MODEL",
+        "ANTHROPIC_API_KEY", "ANTHROPIC_MODEL",
         "OPENAI_API_KEY", "OPENAI_MODEL", "GEMINI_API_KEY", "GEMINI_MODEL",
         "OLLAMA_BASE_URL", "OLLAMA_MODEL", "OLLAMA_NUM_CTX",
         "RESUME_NAME", "RESUME_CONTACT", "INTERVIEW_DATA_DIR",
@@ -93,6 +94,45 @@ public sealed class ConfigPageTests : IDisposable
 
         Assert.Equal("claude-opus-4-7", vm.AnthropicModel);
         Assert.Equal("claude-opus-4-7", EnvFile.Load(shell.Config.Env.Path).Get("ANTHROPIC_MODEL"));
+    }
+
+    [Fact]
+    public void Choosing_an_installed_cli_persists_provider_path_and_model()
+    {
+        var shell = FreshShell("ACTIVE_PROVIDER=anthropic\n");
+        var vm = new ConfigPageViewModel(shell);
+        Assert.Equal("sonnet", vm.ClaudeCliModel); // the CLI alias default
+        Assert.NotNull(vm.SelectedClaudeCliModel);
+
+        vm.ActiveProvider = "claude-cli";
+        vm.SelectedClaudeCliModel = vm.ClaudeCliModels.First(m => m.Id == "opus");
+        var bogus = Path.Combine(_dir, "nowhere", "claude.exe");
+        vm.ClaudeCliPath = bogus;
+
+        Assert.True(vm.IsClaudeCli);
+        Assert.False(vm.IsAnthropic);
+        Assert.False(vm.ClaudeCliFound); // an explicit path that doesn't exist is "Not found"
+        Assert.Contains("Not found", vm.ClaudeCliPathHint);
+        var env = EnvFile.Load(shell.Config.Env.Path);
+        Assert.Equal("claude-cli", env.Get("ACTIVE_PROVIDER"));
+        Assert.Equal("opus", env.Get("CLAUDE_CLI_MODEL"));
+        Assert.Equal(bogus, env.Get("CLAUDE_CLI_PATH"));
+        Assert.StartsWith("Claude Code - opus", shell.ProviderChip);
+        Assert.False(shell.ProviderConfigured); // nothing to run until the path resolves
+    }
+
+    [Fact]
+    public void A_codex_model_left_empty_means_the_cli_default()
+    {
+        var shell = FreshShell("ACTIVE_PROVIDER=codex-cli\n");
+        var vm = new ConfigPageViewModel(shell);
+
+        Assert.True(vm.IsCodexCli);
+        Assert.Equal("", vm.CodexCliModel);
+        Assert.StartsWith("CLI default", vm.CodexCliModelHint);
+        Assert.StartsWith("Codex - ", shell.ProviderChip);
+        vm.SelectedClaudeCliModel = null; // an empty dropdown must not clear the setting
+        Assert.Equal("sonnet", vm.ClaudeCliModel);
     }
 
     [Fact]

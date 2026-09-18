@@ -156,6 +156,24 @@ private / loopback / reserved / link-local IPs — ported from the original).
      The same incident taught `StructuredPosting.CompanyFromPage` to read a
      microdata `hiringOrganization` → `name`, between `og:site_name` and the
      title's "… at {Company}" tail, so the page fallback names the employer too.
+   - **LinkedIn guest job API** (`LinkedInPosting`) —
+     `https://www.linkedin.com/jobs/view/{id}/?trk=…`, `/jobs/view/{slug}-{id}`
+     and `/jobs/search/?currentJobId={id}` →
+     `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{id}`, no sign-in
+     needed. The guest page is server-rendered, so it scraped "successfully":
+     the posting under the sign-in header, search bar, "Similar jobs" rail and
+     footer, ~19 k chars of it. It carries no JSON-LD, and its `og:title` is
+     "{Role} at {Company} — {City} | LinkedIn Jobs", so Company came out as
+     "Retool — San Francisco, CA | LinkedIn Jobs" (the Retool regression). The
+     guest endpoint returns an HTML fragment of just the top card and the
+     description — the same markup the page embeds
+     (`top-card-layout__title`, `topcard__org-name-link`,
+     `topcard__flavor--bullet`, `compensation__salary`,
+     `description__job-criteria-item`, `show-more-less-html__markup`) — so one
+     parser reads both, and the canonical `/jobs/view/{id}/` page is registered
+     as a second endpoint for when the guest one rate-limits. Rendered as
+     title, Company/Location/Base pay range/Seniority level/Employment
+     type/Job function/Industries lines, then the description.
 2. **Plain `HttpClient` fetch**, then a **block-aware strip** (`HtmlText.PageToText`):
    block tags become newlines and `<li>` becomes a bullet, so a posting keeps its
    headings and lists. The original's flat `_html_to_text` (kept as

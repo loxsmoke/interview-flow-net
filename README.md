@@ -20,7 +20,7 @@ is saved locally so you can stop and come back.
 
 | | Step | What it gives you |
 |---|---|---|
-| 📋 | **Setup** | Paste the posting or a link — Workday, Greenhouse, SmartRecruiters and most job boards are fetched for you |
+| 📋 | **Setup** | Paste the posting or a link — LinkedIn, Workday, Greenhouse, SmartRecruiters and most job boards are fetched for you |
 | 📄 | **Resume** | Upload or paste a resume — PDF, DOCX, TXT, MD — with a saved library across applications |
 | 🔍 | **Research** | Deep-dives the company over live web search: culture, tech stack, red flags, fit score |
 | 🕵️ | **Interview Intel** | Mines Glassdoor, Blind, Reddit and Levels.fyi for real questions and process details |

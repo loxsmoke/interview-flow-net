@@ -284,6 +284,10 @@ public static partial class JobPostingFetcher
             (IcimsPosting.FrameUrl(url), "text/html", IcimsPosting.ParseFrameHtml),
             (AdpPosting.ApiUrl(url), "application/json", AdpPosting.ParseJobJson),
             (SmartRecruitersPosting.ApiUrl(url), "application/json", SmartRecruitersPosting.ParsePostingJson),
+            // The guest fragment first; the canonical page carries the same
+            // markup when the guest endpoint rate-limits a burst of fetches.
+            (LinkedInPosting.GuestApiUrl(url), "text/html", LinkedInPosting.ParseHtml),
+            (LinkedInPosting.PageUrl(url), "text/html", LinkedInPosting.ParseHtml),
         ];
 
         foreach (var (endpoint, accept, parse) in boards)

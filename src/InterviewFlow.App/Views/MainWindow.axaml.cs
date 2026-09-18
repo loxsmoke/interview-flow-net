@@ -7,7 +7,11 @@ namespace InterviewFlow.App.Views;
 
 public sealed partial class MainWindow : Window
 {
-    public MainWindow() => InitializeComponent();
+    public MainWindow()
+    {
+        InitializeComponent();
+        ScrollOffsets.KeepAcrossActivation(this);
+    }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 

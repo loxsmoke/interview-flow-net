@@ -174,6 +174,32 @@ private / loopback / reserved / link-local IPs — ported from the original).
      as a second endpoint for when the guest one rate-limits. Rendered as
      title, Company/Location/Base pay range/Seniority level/Employment
      type/Job function/Industries lines, then the description.
+   - **Indeed viewjob JSON + description RPC** (`IndeedPosting`) —
+     `https://www.indeed.com/viewjob?jk={jk}&tk=…` (job-alert email links),
+     `/jobs?…&vjk={jk}`, `/m/viewjob?jk={jk}`, `/rc/clk?jk={jk}`. The page is
+     behind a bot check: every plain fetch gets HTTP 403 "Security Check"
+     (Cloudflare challenge), whatever the user agent, so the page path had
+     nothing and the LLM step had no HTML to extract from — the user saw
+     "paste the text instead" (the Indeed regression). Two endpoints on the
+     same host answer a request **over HTTP/3**: the check fingerprints the
+     connection, and .NET's HTTP/1.1 and HTTP/2 stacks are refused every time
+     (401 "Authenticating…" / 403) while the same request over QUIC gets
+     through 6 of 6 (`curl`, with a different TLS stack, got ~50 % over
+     HTTP/1.1 — which is how the endpoints were found). `GetStringAsync`
+     therefore takes an `http3` flag: `Version30` + `RequestVersionOrHigher`
+     under a 15 s cap, falling back to the ordinary request only when QUIC
+     itself is unavailable (no UDP 443, or macOS, where .NET has no HTTP/3);
+     an answered error is final, since the fallback would only be refused too.
+     `/viewjob?jk={jk}&spa=1` is the page's own JSON
+     (`body.jobInfoWrapperModel.jobInfoModel.jobInfoHeaderModel` → `jobTitle`,
+     `companyName`, `formattedLocation`, `remoteLocation`;
+     `body.salaryInfoModel.salaryText`; `jobMetadataHeaderModel.jobType`;
+     `body.benefitsModel.benefits[].label`; `sanitizedJobDescription` HTML);
+     an occasional challenge still lands, so it is registered twice.
+     `/rpc/jobdescs?jks={jk}` (`{jk: description HTML}`) is the last resort:
+     it never names the role or the employer, so from it Company and Position
+     stay blank. Country sites (uk.indeed.com) serve the same endpoints for
+     their own keys; requests stay on the URL's host.
 2. **Plain `HttpClient` fetch**, then a **block-aware strip** (`HtmlText.PageToText`):
    block tags become newlines and `<li>` becomes a bullet, so a posting keeps its
    headings and lists. The original's flat `_html_to_text` (kept as

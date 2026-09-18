@@ -277,23 +277,30 @@ public static partial class JobPostingFetcher
     private static async Task<JobPostingResult?> FromBoardApiAsync(
         HttpClient client, string url, CancellationToken ct)
     {
-        (string? Endpoint, string Accept, Func<string, PostingDetails?> Parse)[] boards =
+        (string? Endpoint, string Accept, Func<string, PostingDetails?> Parse, bool Http3)[] boards =
         [
-            (WorkdayPosting.CxsUrl(url), "application/json", WorkdayPosting.ParseCxsJson),
-            (GreenhousePosting.ApiUrl(url), "application/json", GreenhousePosting.ParseJobJson),
-            (IcimsPosting.FrameUrl(url), "text/html", IcimsPosting.ParseFrameHtml),
-            (AdpPosting.ApiUrl(url), "application/json", AdpPosting.ParseJobJson),
-            (SmartRecruitersPosting.ApiUrl(url), "application/json", SmartRecruitersPosting.ParsePostingJson),
+            (WorkdayPosting.CxsUrl(url), "application/json", WorkdayPosting.ParseCxsJson, false),
+            (GreenhousePosting.ApiUrl(url), "application/json", GreenhousePosting.ParseJobJson, false),
+            (IcimsPosting.FrameUrl(url), "text/html", IcimsPosting.ParseFrameHtml, false),
+            (AdpPosting.ApiUrl(url), "application/json", AdpPosting.ParseJobJson, false),
+            (SmartRecruitersPosting.ApiUrl(url), "application/json", SmartRecruitersPosting.ParsePostingJson, false),
             // The guest fragment first; the canonical page carries the same
             // markup when the guest endpoint rate-limits a burst of fetches.
-            (LinkedInPosting.GuestApiUrl(url), "text/html", LinkedInPosting.ParseHtml),
-            (LinkedInPosting.PageUrl(url), "text/html", LinkedInPosting.ParseHtml),
+            (LinkedInPosting.GuestApiUrl(url), "text/html", LinkedInPosting.ParseHtml, false),
+            (LinkedInPosting.PageUrl(url), "text/html", LinkedInPosting.ParseHtml, false),
+            // Indeed's bot check passes these over HTTP/3 and turns the same
+            // request away over HTTP/1.1 or HTTP/2; an occasional challenge
+            // still gets through, so the JSON endpoint gets a second try
+            // before settling for the nameless description RPC.
+            (IndeedPosting.SpaUrl(url), "application/json", IndeedPosting.ParseSpaJson, true),
+            (IndeedPosting.SpaUrl(url), "application/json", IndeedPosting.ParseSpaJson, true),
+            (IndeedPosting.DescriptionsUrl(url), "application/json", IndeedPosting.ParseDescriptionsJson, true),
         ];
 
-        foreach (var (endpoint, accept, parse) in boards)
+        foreach (var (endpoint, accept, parse, http3) in boards)
         {
             if (endpoint is not null
-                && await FromBoardApiAsync(client, endpoint, accept, parse, ct) is { } resolved)
+                && await FromBoardApiAsync(client, endpoint, accept, parse, ct, http3) is { } resolved)
             {
                 return resolved;
             }
@@ -305,9 +312,9 @@ public static partial class JobPostingFetcher
     /// <summary>One board-API request; null (logged) when it yields no posting.</summary>
     private static async Task<JobPostingResult?> FromBoardApiAsync(
         HttpClient client, string endpoint, string accept, Func<string, PostingDetails?> parse,
-        CancellationToken ct)
+        CancellationToken ct, bool http3 = false)
     {
-        var body = await GetStringAsync(client, endpoint, accept, ct);
+        var body = await GetStringAsync(client, endpoint, accept, ct, http3);
         if (body.Length > 0 && parse(body) is { } posting && posting.Text.Length >= ThinTextThreshold)
             return Resolved(posting);
 
@@ -318,25 +325,67 @@ public static partial class JobPostingFetcher
     private static JobPostingResult Resolved(PostingDetails details) =>
         new(details.Text, WasFetched: true, Company: details.Company, Position: details.Title);
 
-    /// <summary>GET as a browser would; "" on any failure (logged, never thrown).</summary>
+    /// <summary>How long an HTTP/3 attempt may take before the ordinary request is tried instead.</summary>
+    private static readonly TimeSpan Http3Timeout = TimeSpan.FromSeconds(15);
+
+    /// <summary>
+    /// GET as a browser would; "" on any failure (logged, never thrown).
+    /// With <paramref name="http3"/> the request goes over QUIC first: Indeed's
+    /// bot check lets that through and challenges the same request over
+    /// HTTP/1.1 or HTTP/2 (docs/05 §5.7). QUIC needs UDP 443 and platform
+    /// support (.NET has none on macOS), so an attempt that gets no answer at
+    /// all falls back to the ordinary request; one that was answered with an
+    /// error is final, since the fallback would only be refused too.
+    /// </summary>
     private static async Task<string> GetStringAsync(
-        HttpClient client, string url, string accept, CancellationToken ct)
+        HttpClient client, string url, string accept, CancellationToken ct, bool http3 = false)
     {
+        if (http3)
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(Http3Timeout);
+            try
+            {
+                return await SendAsync(client, url, accept, timeout.Token,
+                    HttpVersion.Version30, HttpVersionPolicy.RequestVersionOrHigher);
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode is not null)
+            {
+                Logging.DiagnosticLog.Warn("fetch", $"GET {url} over HTTP/3 failed: {ex.Message}");
+                return "";
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                Logging.DiagnosticLog.Warn("fetch", $"HTTP/3 unavailable for {url} ({ex.Message}); retrying over HTTP/1.1");
+            }
+        }
+
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
-            request.Headers.Add("User-Agent",
-                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36");
-            request.Headers.Add("Accept", accept);
-            using var response = await client.SendAsync(request, ct);
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStringAsync(ct);
+            return await SendAsync(client, url, accept, ct, version: null, policy: null);
         }
         catch (Exception ex)
         {
             Logging.DiagnosticLog.Warn("fetch", $"GET {url} failed: {ex.Message}");
             return "";
         }
+    }
+
+    private static async Task<string> SendAsync(
+        HttpClient client, string url, string accept, CancellationToken ct,
+        Version? version, HttpVersionPolicy? policy)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (version is not null)
+            request.Version = version;
+        if (policy is not null)
+            request.VersionPolicy = policy.Value;
+        request.Headers.Add("User-Agent",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36");
+        request.Headers.Add("Accept", accept);
+        using var response = await client.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(ct);
     }
 
     /// <summary>Cap on HTML handed to the model — ~40 k tokens of markup.</summary>

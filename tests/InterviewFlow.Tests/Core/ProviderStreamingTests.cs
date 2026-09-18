@@ -10,7 +10,7 @@ namespace InterviewFlow.Tests.Core;
 internal sealed class FakeHandler : HttpMessageHandler
 {
     private readonly Queue<HttpResponseMessage> _responses = new();
-    public List<(string Url, string Body)> Requests { get; } = [];
+    public List<(string Url, string Body, Version Version)> Requests { get; } = [];
 
     public void Enqueue(HttpStatusCode status, string body, string contentType = "text/event-stream",
         (string Name, string Value)? header = null)
@@ -28,7 +28,7 @@ internal sealed class FakeHandler : HttpMessageHandler
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var body = request.Content is null ? "" : await request.Content.ReadAsStringAsync(cancellationToken);
-        Requests.Add((request.RequestUri!.ToString(), body));
+        Requests.Add((request.RequestUri!.ToString(), body, request.Version));
         var response = _responses.Dequeue();
         // What a real handler does, and what error reporting reads the host from.
         response.RequestMessage = request;

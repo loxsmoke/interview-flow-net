@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Builds the macOS .app bundle (docs/01-architecture.md §Packaging, TODO §M9).
 #
 #   bash tools/publish-macos.sh [osx-arm64|osx-x64]
@@ -66,8 +66,8 @@ if [[ -n "${SPARKLE_PUBLIC_ED_KEY:-}" ]]; then
     configure "$app/Contents/Info.plist" "$RID"
   # Both the bridge and framework must support the selected runtime even when
   # Intel packages are cross-built on an Apple Silicon runner.
-  lipo -verify_arch "$arch" "$app/Contents/MacOS/libInterviewFlow.Updater.dylib"
-  lipo -verify_arch "$arch" "$app/Contents/Frameworks/Sparkle.framework/Sparkle"
+  lipo "$app/Contents/MacOS/libInterviewFlow.Updater.dylib" -verify_arch "$arch"
+  lipo "$app/Contents/Frameworks/Sparkle.framework/Sparkle" -verify_arch "$arch"
 fi
 
 if command -v codesign >/dev/null 2>&1; then

@@ -22,7 +22,8 @@ sparkle="$(bash tools/macos/get-sparkle.sh)"
 In GitHub repository Settings > Secrets and variables > Actions:
 
 1. Create a **repository variable** named `SPARKLE_PUBLIC_ED_KEY` with the public
-   key printed by the last command.
+   key printed by the last command. A **repository secret** with the same name
+   also works; the workflow uses the variable first, then falls back to the secret.
 2. Export the private key to a file outside the repository:
 
    ```bash

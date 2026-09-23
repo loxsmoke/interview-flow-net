@@ -135,9 +135,9 @@ jobs:
       - name: Publish macOS bundle
         if: runner.os == 'macOS'
         env:
-          SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
+          SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY || secrets.SPARKLE_PUBLIC_ED_KEY }}
         run: |
-          : "${SPARKLE_PUBLIC_ED_KEY:?Set the SPARKLE_PUBLIC_ED_KEY repository variable (docs/11-macos-updates.md)}"
+          : "${SPARKLE_PUBLIC_ED_KEY:?Set SPARKLE_PUBLIC_ED_KEY as a repository Actions variable or secret (docs/11-macos-updates.md)}"
           bash tools/publish-macos.sh ${{ matrix.rid }}
 
       # ditto, not zip: it preserves the bundle's symlinks, permissions and the

@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="../../src/InterviewFlow.Core/InterviewFlow.Core.csproj" />
     <ProjectReference Include="../../src/InterviewFlow.App/InterviewFlow.App.csproj" />
+    <ProjectReference Include="../../tools/InterviewFlow.MacPackaging/InterviewFlow.MacPackaging.csproj" />
   </ItemGroup>
 
   <ItemGroup>

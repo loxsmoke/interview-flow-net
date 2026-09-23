@@ -134,16 +134,19 @@ jobs:
       # It reads <Version> from the csproj, which the stamp step just set.
       - name: Publish macOS bundle
         if: runner.os == 'macOS'
-        run: bash tools/publish-macos.sh ${{ matrix.rid }}
+        env:
+          SPARKLE_PUBLIC_ED_KEY: ${{ vars.SPARKLE_PUBLIC_ED_KEY }}
+        run: |
+          : "${SPARKLE_PUBLIC_ED_KEY:?Set the SPARKLE_PUBLIC_ED_KEY repository variable (docs/11-macos-updates.md)}"
+          bash tools/publish-macos.sh ${{ matrix.rid }}
 
       # ditto, not zip: it preserves the bundle's symlinks, permissions and the
       # ad-hoc signature. A plain zip produces a bundle Gatekeeper rejects.
       - name: Package macOS archive
         if: runner.os == 'macOS'
-        run: |
-          mkdir -p artifacts
-          ditto -c -k --keepParent "dist/Interview Flow.app" \
-            "artifacts/InterviewFlow-${VERSION}-${{ matrix.rid }}.zip"
+        env:
+          SPARKLE_PRIVATE_ED_KEY: ${{ secrets.SPARKLE_PRIVATE_ED_KEY }}
+        run: bash tools/macos/package-update.sh ${{ matrix.rid }}
 
       # Trimming settings (TrimMode=partial) and the reasoning behind them
       # live in Directory.Build.props, keyed off PublishTrimmed.
@@ -198,7 +201,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: package-${{ matrix.rid }}
-          path: artifacts/*
+          path: |
+            artifacts/*.zip
+            artifacts/appcast-*.xml
           if-no-files-found: error
 
   # ── 3. Every build passed: take the version and publish ──────────────────
@@ -290,6 +295,8 @@ jobs:
           body: |
             Self-contained builds — no .NET runtime needed on the target machine.
 
-            The macOS bundles are **ad-hoc signed, not notarized**: on first
-            launch right-click the app and choose **Open** once.
+            The macOS bundles are **ad-hoc signed, not notarized**. macOS may
+            require approval in System Settings > Privacy & Security on first launch.
+            Install this updater-enabled version manually once; future stable
+            updates are available through **About > Check for updates**.
           files: artifacts/*

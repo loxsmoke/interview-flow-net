@@ -76,6 +76,8 @@ Where the files live, the lookup order, and the environment-variable overrides:
 
 ## Layout
 
+For free macOS in-app updates, see the [signing-key setup and Mac test guide](docs/11-macos-updates.md).
+
 ```
 src/InterviewFlow.App    Avalonia UI (net10.0, cross-platform)
 src/InterviewFlow.Core   domain: models, state store, agents, providers, markdown pipeline

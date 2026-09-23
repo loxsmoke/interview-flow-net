@@ -28,6 +28,8 @@ public sealed class App : Application
             {
                 DataContext = new MainViewModel(config),
             };
+            if (OperatingSystem.IsMacOS())
+                desktop.MainWindow.Opened += (_, _) => Platform.MacUpdater.Initialize(config);
             desktop.Exit += (_, _) =>
             {
                 Telemetry.Shutdown();

@@ -20,6 +20,12 @@
       <TextBlock Text="AI-powered interview coaching — research, prep, practice, and debrief in one place."
                  FontSize="13" Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,32" />
 
+      <StackPanel x:Name="MacUpdatePanel" IsVisible="False" Spacing="8" Margin="0,0,0,24">
+        <Button x:Name="CheckUpdatesButton" Content="Check for updates…" Click="CheckUpdates_Click" />
+        <TextBlock x:Name="UpdateStatus" FontSize="13" TextWrapping="Wrap"
+                   Foreground="{StaticResource TextMutedBrush}" />
+      </StackPanel>
+
       <TextBlock Text="WHAT IT DOES" FontSize="11" FontWeight="SemiBold" LetterSpacing="1"
                  Foreground="{StaticResource TextMutedBrush}" Margin="0,0,0,12" />
       <ItemsControl ItemsSource="{Binding Features}">
